@@ -7,8 +7,11 @@ import com.xiaoyu.dto.BindMobileDTO;
 import com.xiaoyu.dto.UserRealNameDTO;
 import com.xiaoyu.dto.UserSelfInfoDTO;
 import com.xiaoyu.entity.UserPO;
+import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
+import com.xiaoyu.service.BlacklistsService;
 import com.xiaoyu.service.UserService;
+import com.xiaoyu.vo.BlacklistsVO;
 import com.xiaoyu.vo.UserVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +25,9 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private BlacklistsService blacklistsService;
 
     @GetMapping
     public Result<UserVO> getUserPublicInfo(@PathVariable Long userId){
@@ -57,11 +63,23 @@ public class UserController {
     }
 
     @PostMapping("/blacklist")
-    public Result addToBlacklist(@RequestBody Long userId){
-        log.info("将用户加入黑名单：{}",userId);
-        return Result.success("加入成功");
+    public Result addToBlacklist(@RequestBody Long targetId){
+        log.info("将用户加入黑名单：{}",targetId);
+        blacklistsService.addBlacklist(targetId);
+        return Result.success("拉黑成功");
     }
 
+    @DeleteMapping("/blacklist/{target_id}")
+    public Result removeFromBlacklist(@PathVariable Long targetId){
+        log.info("将用户移出黑名单：{}",targetId);
+        blacklistsService.removeFromBlacklist(targetId);
+        return Result.success("移出成功");
+    }
 
+    @GetMapping("/blacklist")
+    public Result<PageResult<BlacklistsVO>> getBlacklist(@RequestParam(required=false,defaultValue = "1") Integer page, @RequestParam(required=false,defaultValue = "20") Integer pageSize){
+        log.info("获取黑名单列表：{}",page);
+        return Result.success(userService.getBlacklist(page,pageSize));
+    }
 
 }

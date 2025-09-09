@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("blacklists")
-public class BlacklistPO {
+public class BlacklistsPO {
 
     /** 主键 */
     @TableId(type = IdType.AUTO)
@@ -22,5 +22,6 @@ public class BlacklistPO {
     private Long targetId;
 
     /** 拉黑时间 */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 }

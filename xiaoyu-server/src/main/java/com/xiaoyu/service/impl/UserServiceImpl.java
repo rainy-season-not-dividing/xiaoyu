@@ -2,19 +2,33 @@ package com.xiaoyu.service.impl;
 
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.BindMobileDTO;
 import com.xiaoyu.dto.UserRealNameDTO;
 import com.xiaoyu.dto.UserSelfInfoDTO;
+import com.xiaoyu.entity.BlacklistsPO;
 import com.xiaoyu.entity.UserPO;
 import com.xiaoyu.mapper.UserMapper;
+import com.xiaoyu.result.PageResult;
+import com.xiaoyu.service.BlacklistsService;
 import com.xiaoyu.service.UserService;
+import com.xiaoyu.vo.BlacklistsVO;
 import com.xiaoyu.vo.UserVO;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, UserPO> implements UserService {
+
+    @Resource
+    private BlacklistsService blacklistsService;
+
+
 
     @Override
     public UserVO getUserPublicInfo(Long userId) {
@@ -52,6 +66,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserPO> implements 
         userPO.setId(BaseContext.getId());
         userPO.setMobile(mobliePhone);
         updateById(userPO);
+    }
+
+    @Override
+    public PageResult<BlacklistsVO> getBlacklist(Integer page, Integer pageSize) {
+        // 获取当前用户信息
+        Long userId = BaseContext.getId();
+        // 获取用户黑名单列表，简化逻辑
+        Page<BlacklistsVO> blackPageInfo = blacklistsService.getBlackList(new Page<>(page,pageSize),userId);
+        return new PageResult<>(blackPageInfo.getRecords(),page,pageSize,blackPageInfo.getTotal());
+
     }
 
 

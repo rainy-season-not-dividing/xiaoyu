@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaoyu.mapper.BlacklistsMapper">
+
+    <resultMap id = "BlackListMap" type = "com.xiaoyu.vo.BlacklistsVO">
+        <id property="id" column="id"/>
+        <result property="targetId" column="target_id"/>
+        <result property="targetId" column="target_id"/>
+
+<!--        嵌套对象 ：targetUser-->
+        <association property="targetUser" javaType="com.xiaoyu.vo.BlacklistsVO$BlackUserInfo">
+            <id property="id" column="target_user_id"/>
+            <result property="nickname" column="nickname"/>
+            <result property="avatarUrl" column="avatar_url"/>
+        </association>
+    </resultMap>
+
+
+
+    <select id="getBlackList" resultMap="BlackListMap">
+        select b.id, b.target_id, b.created_at, u.nickname, u.avatar_url,
+               u.id as target_user_id
+        from blacklists b
+        left join users u on b.target_id = u.id
+        where b.owner_id = #{userId}
+    </select>
+
+</mapper>

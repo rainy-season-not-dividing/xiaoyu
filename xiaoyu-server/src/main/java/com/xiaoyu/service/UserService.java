@@ -5,6 +5,8 @@ import com.xiaoyu.dto.BindMobileDTO;
 import com.xiaoyu.dto.UserRealNameDTO;
 import com.xiaoyu.dto.UserSelfInfoDTO;
 import com.xiaoyu.entity.UserPO;
+import com.xiaoyu.result.PageResult;
+import com.xiaoyu.vo.BlacklistsVO;
 import com.xiaoyu.vo.UserVO;
 
 public interface UserService extends IService<UserPO> {
@@ -16,4 +18,6 @@ public interface UserService extends IService<UserPO> {
     Integer realNameAuth(UserRealNameDTO userRealNameDTO);
 
     void bindMobileDTO(BindMobileDTO bindMobileDTO);
+
+    PageResult<BlacklistsVO> getBlacklist(Integer page, Integer pageSize);
 }
