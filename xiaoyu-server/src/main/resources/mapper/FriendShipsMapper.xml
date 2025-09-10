@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaoyu.mapper.FriendShipsMapper">
+
+    <resultMap id="FriendlistMap" type="com.xiaoyu.vo.FriendlistVO">
+        <id property="id" column="id"/>
+        <result property="friendId" column="friend_id"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="isReceiver" column="isReceiver"/>
+        <association property="friendInfo" javaType="com.xiaoyu.vo.FriendlistVO$FriendlistFriendInfo">
+            <id property="id" column="user_id"/>
+            <result property="nickname" column="nickname"/>
+            <result property="avatarUrl" column="avatar_url"/>
+            <result property="campusName" column="campus_name"/>
+        </association>
+    </resultMap>
+
+    <select id="getFriendlist" resultMap="FriendlistMap">
+            select f.id, f.friend_id, f.status, f.created_at,
+                   u.id as user_id, u.nickname, u.avatar_url,
+                   c.name as campus_name,
+                   CASE
+                       WHEN f.requester_id = #{userId} THEN 'SENDER'
+                       ELSE 'RECEIVER'
+                       END AS isReceiver
+            from friendships f
+            left join users u on f.friend_id = u.id
+            left join campuses c on u.campus_id = c.id
+            where f.user_id = #{userId}
+            <if test="status!=null">and f.status = #{status}  </if>
+            union
+            select f.id, f.user_id, f.status, f.created_at,
+                   u.id as friend_id, u.nickname, u.avatar_url,
+                   c.name as campus_name,
+                   CASE
+                       WHEN f.requester_id = #{userId} THEN 'SENDER'
+                       ELSE 'RECEIVER'
+                       END AS isReceiver
+            from friendships f
+            left join users u on f.user_id = u.id
+            left join campuses c on u.campus_id = c.id
+            where f.friend_id = #{userId}
+            <if test="status!=null">and f.status = #{status}  </if>
+
+    </select>
+
+
+</mapper>

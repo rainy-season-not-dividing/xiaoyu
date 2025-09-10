@@ -1,12 +1,12 @@
 package com.xiaoyu.controller.user;
 
 
-import cn.hutool.core.bean.BeanUtil;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.BindMobileDTO;
 import com.xiaoyu.dto.UserRealNameDTO;
 import com.xiaoyu.dto.UserSelfInfoDTO;
-import com.xiaoyu.entity.UserPO;
+import com.xiaoyu.dto.addToBlacklistDTO;
+import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
 import com.xiaoyu.service.BlacklistsService;
@@ -36,7 +36,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public Result<UserPO> getUserSelfInfo(){
+    public Result<UsersPO> getUserSelfInfo(){
         log.info("获取当前用户的信息");
         return Result.success(userService.getById(BaseContext.getId()));
     }
@@ -63,8 +63,9 @@ public class UserController {
     }
 
     @PostMapping("/blacklist")
-    public Result addToBlacklist(@RequestBody Long targetId){
-        log.info("将用户加入黑名单：{}",targetId);
+    public Result addToBlacklist(@RequestBody addToBlacklistDTO addToBlacklist){
+        log.info("将用户加入黑名单：{}",addToBlacklist);
+        Long targetId = addToBlacklist.getTargetId();
         blacklistsService.addBlacklist(targetId);
         return Result.success("拉黑成功");
     }
@@ -77,9 +78,11 @@ public class UserController {
     }
 
     @GetMapping("/blacklist")
-    public Result<PageResult<BlacklistsVO>> getBlacklist(@RequestParam(required=false,defaultValue = "1") Integer page, @RequestParam(required=false,defaultValue = "20") Integer pageSize){
+    public Result<PageResult<BlacklistsVO>> getBlacklist(@RequestParam(required=false,defaultValue = "1") Integer page, @RequestParam(required=false,defaultValue = "20") Integer size){
         log.info("获取黑名单列表：{}",page);
-        return Result.success(userService.getBlacklist(page,pageSize));
+        return Result.success(userService.getBlacklist(page,size));
     }
+
+
 
 }

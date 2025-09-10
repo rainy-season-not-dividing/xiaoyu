@@ -1,10 +1,10 @@
 package com.xiaoyu.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.xiaoyu.entity.UsersPO;
+import com.xiaoyu.entity.TagItemsPO;
 import org.apache.ibatis.annotations.Mapper;
 
 
 @Mapper
-public interface UserMapper extends BaseMapper<UsersPO> {
+public interface TagItemsMapper extends BaseMapper<TagItemsPO> {
 }

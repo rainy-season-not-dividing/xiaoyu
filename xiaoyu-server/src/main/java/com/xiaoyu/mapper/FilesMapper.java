@@ -1,10 +1,9 @@
 package com.xiaoyu.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.xiaoyu.entity.UsersPO;
+import com.xiaoyu.entity.TaskFilesPO;
 import org.apache.ibatis.annotations.Mapper;
 
-
 @Mapper
-public interface UserMapper extends BaseMapper<UsersPO> {
+public interface FilesMapper extends BaseMapper<TaskFilesPO> {
 }

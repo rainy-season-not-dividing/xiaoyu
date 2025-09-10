@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.entity.BlacklistsPO;
+import com.xiaoyu.exception.NotAllowedToBlackYourselfException;
 import com.xiaoyu.mapper.BlacklistsMapper;
 import com.xiaoyu.service.BlacklistsService;
 import com.xiaoyu.vo.BlacklistsVO;
@@ -20,6 +21,8 @@ public class BlacklistsServiceImpl extends ServiceImpl<BlacklistsMapper, Blackli
     @Override
     public void addBlacklist(Long targetId) {
         Long userId = BaseContext.getId();
+        if(targetId == userId)
+            throw new NotAllowedToBlackYourselfException("不能将自己加入黑名单");
         BlacklistsPO blacklistsPO = new BlacklistsPO();
         blacklistsPO.setOwnerId(userId);
         blacklistsPO.setTargetId(targetId);
