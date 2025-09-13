@@ -3,27 +3,34 @@ package com.xiaoyu.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.PublishTaskDTO;
+import com.xiaoyu.entity.FavoritesPO;
 import com.xiaoyu.entity.TagItemsPO;
 import com.xiaoyu.entity.TaskFilesPO;
 import com.xiaoyu.entity.TasksPO;
 import com.xiaoyu.mapper.TasksMapper;
 import com.xiaoyu.result.PageResult;
+import com.xiaoyu.service.FavoritesService;
 import com.xiaoyu.service.TagItemsService;
 import com.xiaoyu.service.TaskFilesService;
 import com.xiaoyu.service.TasksService;
 import com.xiaoyu.vo.GetTasksVO;
 import com.xiaoyu.vo.PublishTaskVO;
 import jakarta.annotation.Resource;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.xiaoyu.exception.NotExistsException;
+
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 public class TasksServiceImpl extends ServiceImpl<TasksMapper, TasksPO> implements TasksService {
@@ -36,6 +43,9 @@ public class TasksServiceImpl extends ServiceImpl<TasksMapper, TasksPO> implemen
 
     @Resource
     private TasksMapper tasksMapper;
+
+    @Resource
+    private FavoritesService favoritesService;
 
     @Override
     @Transactional
@@ -122,5 +132,70 @@ public class TasksServiceImpl extends ServiceImpl<TasksMapper, TasksPO> implemen
         // 返回结果
         return taskInfo;
 
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> updateTask(Long taskId, PublishTaskDTO newTaskDTO) {
+        // 1、根据id返回任务详细
+            TasksPO tasksPO = getById(taskId);
+            if(tasksPO == null) throw new NotExistsException("该任务不存在");
+        // 2、任务状态修改为auditing
+            BeanUtils.copyProperties(newTaskDTO,tasksPO);
+            tasksPO.setStatus(TasksPO.Status.AUDITING);
+        // 3、获取用户id， 设置为publisher_id
+            tasksPO.setPublisherId(BaseContext.getId());
+        // 4、封装tasks实体类
+        // 5、更新任务
+            updateById(tasksPO);
+        // 6、更新关联表  file_ids 和 tag_ids
+        // 先删后增
+        taskFilesService.remove(new LambdaQueryWrapper<TaskFilesPO>().eq(TaskFilesPO::getTaskId,taskId));
+        List<TaskFilesPO> taskFilesPOList = newTaskDTO.getFileIds().stream()
+                .map(fileId -> TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
+                .toList();
+        taskFilesService.saveBatch(taskFilesPOList);
+        tagItemsService.remove(new LambdaQueryWrapper<TagItemsPO>().eq(TagItemsPO::getItemId,taskId));
+        List<TagItemsPO> tagItemsPOList = newTaskDTO.getTagIds().stream()
+                .map(tagId -> TagItemsPO.builder().itemId(taskId).tagId(tagId).build())
+                .toList();
+        tagItemsService.saveBatch(tagItemsPOList);
+        return Collections.singletonMap("updated_at", tasksPO.getUpdatedAt());
+    }
+
+    @Override
+    @Transactional
+    public void removeTask(Long taskId) {
+        // 1、是否存在
+        TasksPO tasksPO = getById(taskId);
+        if(tasksPO == null) throw new NotExistsException("任务不存在");
+        // 2、删除关联文件表和关联标签表中对应的记录
+        tagItemsService.remove(new LambdaQueryWrapper<TagItemsPO>().eq(TagItemsPO::getItemId, taskId));
+        taskFilesService.remove(new LambdaQueryWrapper<TaskFilesPO>().eq(TaskFilesPO::getTaskId, taskId));
+        // 3、删除任务
+        removeById(taskId);
+        // todo: 删除任务后，是否要删除 task_order, task_reviews , task_stats 表中对应的记录呢
+    }
+
+    @Override
+    @Transactional
+    public void favoriteTask(Long taskId) {
+        // todo:是否需要判断task是否存在
+        // 1、获取当前用户
+        Long currentId = BaseContext.getId();
+        // 2、构造实体
+        FavoritesPO favoritesPO = FavoritesPO.builder()
+                .userId(currentId)
+                .itemId(taskId)
+                .itemType(FavoritesPO.ItemType.TASK).build();
+        // 3、保存到收藏表中
+        favoritesService.save(favoritesPO);
+    }
+
+    @Override
+    @Transactional
+    public void removeFavoriteTask(Long taskId) {
+        // 删除收藏表中对应的记录
+        favoritesService.remove(new LambdaQueryWrapper<FavoritesPO>().eq(FavoritesPO::getUserId, BaseContext.getId()).eq(FavoritesPO::getItemId, taskId).eq(FavoritesPO::getItemType, FavoritesPO.ItemType.TASK));
     }
 }

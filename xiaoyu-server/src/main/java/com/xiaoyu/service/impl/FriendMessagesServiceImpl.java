@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
-import com.xiaoyu.dto.sendMessageDTO;
+import com.xiaoyu.dto.SendMessageDTO;
 import com.xiaoyu.entity.FriendMessagesPO;
 import com.xiaoyu.mapper.FriendMessagesMapper;
 import com.xiaoyu.result.PageResult;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class FriendMessagesServiceImpl extends ServiceImpl<FriendMessagesMapper, FriendMessagesPO> implements FriendMessagesService {
     @Override
-    public SendMessageVO sendMessage(sendMessageDTO message) {
+    public SendMessageVO sendMessage(SendMessageDTO message) {
         // 获取当前用户id
         Long currentId = BaseContext.getId();
         // 写表

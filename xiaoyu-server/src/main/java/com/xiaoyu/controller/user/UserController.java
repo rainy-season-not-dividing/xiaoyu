@@ -5,7 +5,7 @@ import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.BindMobileDTO;
 import com.xiaoyu.dto.UserRealNameDTO;
 import com.xiaoyu.dto.UserSelfInfoDTO;
-import com.xiaoyu.dto.addToBlacklistDTO;
+import com.xiaoyu.dto.AddToBlacklistDTO;
 import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
@@ -63,7 +63,7 @@ public class UserController {
     }
 
     @PostMapping("/blacklist")
-    public Result addToBlacklist(@RequestBody addToBlacklistDTO addToBlacklist){
+    public Result addToBlacklist(@RequestBody AddToBlacklistDTO addToBlacklist){
         log.info("将用户加入黑名单：{}",addToBlacklist);
         Long targetId = addToBlacklist.getTargetId();
         blacklistsService.addBlacklist(targetId);

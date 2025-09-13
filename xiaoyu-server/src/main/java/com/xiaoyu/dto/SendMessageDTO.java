@@ -4,7 +4,7 @@ package com.xiaoyu.dto;
 import lombok.Data;
 
 @Data
-public class sendMessageDTO {
+public class SendMessageDTO {
     private Long toId;
     private String content;
 }

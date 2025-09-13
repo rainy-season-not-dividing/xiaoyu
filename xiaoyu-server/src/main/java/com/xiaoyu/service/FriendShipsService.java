@@ -1,13 +1,13 @@
 package com.xiaoyu.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.xiaoyu.dto.sendFriendRequestDTO;
+import com.xiaoyu.dto.SendFriendRequestDTO;
 import com.xiaoyu.entity.FriendshipsPO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.vo.FriendlistVO;
 
 public interface FriendShipsService extends IService<FriendshipsPO> {
-    void sendFriendRequest(sendFriendRequestDTO sendFriendRequestDTO);
+    void sendFriendRequest(SendFriendRequestDTO sendFriendRequestDTO);
 
     void acceptFriendRequest(Long friendId);
 

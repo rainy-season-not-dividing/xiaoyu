@@ -43,7 +43,7 @@ public class NotificationsPO {
     private LocalDateTime createdAt;
 
     public enum Type {
-        LIKE, FAVORITE, COMMENT, SHARE, TASK_ORDER, SYSTEM, VIOLATION
+        INTERACTION, SYSTEM, CHAT
     }
 
     public enum RefType {

@@ -7,7 +7,7 @@ import com.xiaoyu.result.PageResult;
 import com.xiaoyu.vo.GetTasksVO;
 import com.xiaoyu.vo.PublishTaskVO;
 
-import java.util.List;
+import java.util.Map;
 
 public interface TasksService extends IService<TasksPO> {
     PublishTaskVO publishTask(PublishTaskDTO publishTaskDTO);
@@ -19,4 +19,12 @@ public interface TasksService extends IService<TasksPO> {
     PageResult<GetTasksVO> getMyReceivedTasks(Integer page, Integer size);
 
     GetTasksVO getTask(Long taskId);
+
+    Map<String, Object> updateTask(Long taskId, PublishTaskDTO newTaskDTO);
+
+    void removeTask(Long taskId);
+
+    void favoriteTask(Long taskId);
+
+    void removeFavoriteTask(Long taskId);
 }

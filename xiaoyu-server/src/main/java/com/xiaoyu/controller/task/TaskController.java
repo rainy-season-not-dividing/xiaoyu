@@ -11,6 +11,8 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @Slf4j
 @RequestMapping("/tasks")
@@ -62,7 +64,33 @@ public class TaskController {
     }
 
 
+    @PutMapping("/{task_id}")
+    public Result<Map<String,Object>> updateTask(@PathVariable Long taskId, @RequestBody PublishTaskDTO newTaskDTO){
+        log.info("更新任务：{}",taskId);
+        return Result.success(tasksService.updateTask(taskId,newTaskDTO));
+    }
 
+    @DeleteMapping("/{task_id}")
+    public Result deleteTask(@PathVariable Long taskId){
+        log.info("删除任务：{}",taskId);
+        tasksService.removeTask(taskId);
+        return Result.success("任务删除成功");
+    }
 
+    @PostMapping("/{task_id}/favorite")
+    public Result favoriteTask(@PathVariable Long taskId){
+        log.info("收藏任务：{}",taskId);
+        tasksService.favoriteTask(taskId);
+        return Result.success("收藏成功");
+    }
+
+    @DeleteMapping("/{task_id}/favorite")
+    public Result removeFavoriteTask(@PathVariable Long taskId){
+        log.info("取消收藏任务：{}",taskId);
+        tasksService.removeFavoriteTask(taskId);
+        return Result.success("取消收藏成功");
+    }
+
+    // todo: 转发任务接口待完成
 
 }

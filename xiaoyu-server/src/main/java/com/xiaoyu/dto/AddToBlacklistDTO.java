@@ -3,6 +3,6 @@ package com.xiaoyu.dto;
 import lombok.Data;
 
 @Data
-public class addToBlacklistDTO {
+public class AddToBlacklistDTO {
     Long targetId;
 }

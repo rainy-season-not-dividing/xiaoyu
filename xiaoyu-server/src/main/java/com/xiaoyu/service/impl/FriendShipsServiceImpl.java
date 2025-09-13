@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
-import com.xiaoyu.dto.sendFriendRequestDTO;
+import com.xiaoyu.dto.SendFriendRequestDTO;
 import com.xiaoyu.entity.BlacklistsPO;
 import com.xiaoyu.entity.FriendMessagesPO;
 import com.xiaoyu.entity.FriendshipsPO;
@@ -37,7 +37,7 @@ public class FriendShipsServiceImpl extends ServiceImpl<FriendShipsMapper, Frien
 
     @Override
     @Transactional
-    public void  sendFriendRequest(sendFriendRequestDTO sendFriendRequestDTO) {
+    public void  sendFriendRequest(SendFriendRequestDTO sendFriendRequestDTO) {
         // 获取当前用户id
         Long currentId = BaseContext.getId();
         // 获取目标用户id

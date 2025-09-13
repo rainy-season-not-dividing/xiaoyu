@@ -1,8 +1,8 @@
 package com.xiaoyu.controller.user;
 
 
-import com.xiaoyu.dto.sendFriendRequestDTO;
-import com.xiaoyu.dto.sendMessageDTO;
+import com.xiaoyu.dto.SendFriendRequestDTO;
+import com.xiaoyu.dto.SendMessageDTO;
 import com.xiaoyu.entity.FriendMessagesPO;
 import com.xiaoyu.entity.FriendshipsPO;
 import com.xiaoyu.result.PageResult;
@@ -28,7 +28,7 @@ public class FriendController {
 
 
     @PostMapping("/request")
-    public Result sendFriendRequest(sendFriendRequestDTO sendFriendRequestDTO) {
+    public Result sendFriendRequest(SendFriendRequestDTO sendFriendRequestDTO) {
         log.info("发送好友请求：{}",sendFriendRequestDTO);
         friendShipsService.sendFriendRequest(sendFriendRequestDTO);
         return Result.success("好友请求已发送");
@@ -67,7 +67,7 @@ public class FriendController {
     }
 
     @PostMapping("/messages")
-    public Result<SendMessageVO> sendMessage(@RequestBody sendMessageDTO message){
+    public Result<SendMessageVO> sendMessage(@RequestBody SendMessageDTO message){
         log.info("发送消息：{}",message);
 
         return Result.success(friendMessagesService.sendMessage(message));

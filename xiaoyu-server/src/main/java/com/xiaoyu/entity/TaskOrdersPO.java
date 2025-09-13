@@ -1,7 +1,11 @@
 package com.xiaoyu.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 /**
@@ -9,6 +13,9 @@ import java.time.LocalDateTime;
  */
 @Data
 @TableName("task_orders")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TaskOrdersPO {
 
     /** 订单主键 */
@@ -26,12 +33,14 @@ public class TaskOrdersPO {
     private Status status;
 
     /** 创建时间 */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime createdAt;
 
     /** 更新时间 */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 
     public enum Status {
-        WAIT_ACCEPT, ACCEPTED, REFUSED, CANCELLED, FINISH
+        WAIT_ACCEPT, ACCEPTED, REFUSED, CANCELLED,DELIVERY, FINISH
     }
 }

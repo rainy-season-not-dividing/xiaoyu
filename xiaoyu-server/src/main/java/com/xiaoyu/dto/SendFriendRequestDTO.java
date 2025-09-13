@@ -3,7 +3,7 @@ package com.xiaoyu.dto;
 import lombok.Data;
 
 @Data
-public class sendFriendRequestDTO {
+public class SendFriendRequestDTO {
     Long friendId;
     String message;
 }
