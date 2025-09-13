@@ -38,7 +38,8 @@ public class TaskOrdersServiceImpl extends ServiceImpl<TaskOrdersMapper, TaskOrd
         // 先判断这个单是否存在
         TasksPO tasksPO = tasksService.getOne(new LambdaQueryWrapper<TasksPO>().eq(TasksPO::getId, taskId));
         if(tasksPO==null) throw new NotExistsException("任务不存在");
-        if(tasksPO.getStatus() != TasksPO.Status.RECRUIT){
+        // todo:审核---》招聘的接口
+        if(tasksPO.getStatus() != TasksPO.Status.RECRUIT && tasksPO.getStatus() != TasksPO.Status.AUDITING){
             throw new BadRequestException("任务状态异常");
         }
         // 1、获取用户id
@@ -77,6 +78,8 @@ public class TaskOrdersServiceImpl extends ServiceImpl<TaskOrdersMapper, TaskOrd
         // 修改任务订单表的状态，接收订单
         taskOrdersPO.setStatus(TaskOrdersPO.Status.ACCEPTED);
         updateById(taskOrdersPO);
+        taskPO.setStatus(TasksPO.Status.RUNNING);
+        tasksService.updateById(taskPO);
         // todo：是否需要添加到task_stas数据统计表中
         return new TaskOrdersVO(taskOrderId, taskOrdersPO.getStatus());
     }
@@ -115,18 +118,21 @@ public class TaskOrdersServiceImpl extends ServiceImpl<TaskOrdersMapper, TaskOrd
         }
         // 1、获取用户id
         Long currentId = BaseContext.getId();
-        // 判断这个任务是不是当前用户发布的
-        TasksPO taskPO = tasksService.getOne(new LambdaQueryWrapper<TasksPO>().eq(TasksPO::getId, taskOrdersPO.getTaskId()));
-        if(!currentId.equals(taskPO.getPublisherId())){
-            throw new BadRequestException("任务状态异常，当前用户不是任务发布者");
+        // 判断这个任务是不是当前用户接收的
+        if(!currentId.equals(taskOrdersPO.getReceiverId())){
+            throw new BadRequestException("任务状态异常，当前用户不是任务接收者");
         }
+        TasksPO taskPO = tasksService.getOne(new LambdaQueryWrapper<TasksPO>().eq(TasksPO::getId, taskOrdersPO.getTaskId()));
         if(currentId.equals(taskOrdersPO.getReceiverId())){
             throw new BadRequestException("不能自己拒绝自己发布的任务");
         }
         // 修改任务订单表的状态，改为 取消
         // todo:是否需要删除表中对应的记录呢， 取消订单的前提是什么，这里弄的是订单只处于待接单状态才行
         taskOrdersPO.setStatus(TaskOrdersPO.Status.CANCELLED);
+        taskPO.setStatus(TasksPO.Status.RECRUIT);
         updateById(taskOrdersPO);
+        // 修改任务表中任务的状态
+        tasksService.updateById(taskPO);
         return new TaskOrdersVO(taskOrderId, taskOrdersPO.getStatus());
     }
 
@@ -141,7 +147,7 @@ public class TaskOrdersServiceImpl extends ServiceImpl<TaskOrdersMapper, TaskOrd
         // 1、获取用户id
         Long currentId = BaseContext.getId();
         // 判断这个任务是不是当前用户接收的
-        TasksPO taskPO = tasksService.getOne(new LambdaQueryWrapper<TasksPO>().eq(TasksPO::getId, taskOrdersPO.getTaskId()));
+//        TasksPO taskPO = tasksService.getOne(new LambdaQueryWrapper<TasksPO>().eq(TasksPO::getId, taskOrdersPO.getTaskId()));
         if(!currentId.equals(taskOrdersPO.getReceiverId())){
             throw new BadRequestException("不能标记完成非自己接收的订单");
         }
@@ -170,6 +176,9 @@ public class TaskOrdersServiceImpl extends ServiceImpl<TaskOrdersMapper, TaskOrd
         // 修改任务订单表的状态，改为 完成(接单者)
         taskOrdersPO.setStatus(TaskOrdersPO.Status.FINISH);
         updateById(taskOrdersPO);
+        // 修改任务表中记录的状态
+        taskPO.setStatus(TasksPO.Status.FINISH);
+        tasksService.updateById(taskPO);
         // todo：是否需要添加到task_stas数据统计表中
         return new TaskOrdersVO(taskOrderId, taskOrdersPO.getStatus());
     }
