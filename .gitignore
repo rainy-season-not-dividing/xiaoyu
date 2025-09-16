@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# 阿里云密钥
+application-dev.yml
+application-prod.yml
+*.key
+*.pem
+.env
+

@@ -2,17 +2,17 @@ package com.xiaoyu.controller.user;
 
 
 import com.xiaoyu.context.BaseContext;
-import com.xiaoyu.dto.BindMobileDTO;
-import com.xiaoyu.dto.UserRealNameDTO;
-import com.xiaoyu.dto.UserSelfInfoDTO;
-import com.xiaoyu.dto.AddToBlacklistDTO;
+import com.xiaoyu.dto.user.BindMobileDTO;
+import com.xiaoyu.dto.user.UserRealNameDTO;
+import com.xiaoyu.dto.user.UserSelfInfoDTO;
+import com.xiaoyu.dto.friend.AddToBlacklistDTO;
 import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
 import com.xiaoyu.service.BlacklistsService;
 import com.xiaoyu.service.UserService;
-import com.xiaoyu.vo.BlacklistsVO;
-import com.xiaoyu.vo.UserVO;
+import com.xiaoyu.vo.user.BlacklistsVO;
+import com.xiaoyu.vo.user.UserVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;

@@ -4,7 +4,7 @@ package com.xiaoyu.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaoyu.entity.FriendshipsPO;
-import com.xiaoyu.vo.FriendlistVO;
+import com.xiaoyu.vo.friend.FriendlistVO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

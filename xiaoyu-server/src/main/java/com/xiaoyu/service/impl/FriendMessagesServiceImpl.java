@@ -4,12 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
-import com.xiaoyu.dto.SendMessageDTO;
+import com.xiaoyu.dto.friend.SendMessageDTO;
 import com.xiaoyu.entity.FriendMessagesPO;
 import com.xiaoyu.mapper.FriendMessagesMapper;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.service.FriendMessagesService;
-import com.xiaoyu.vo.SendMessageVO;
+import com.xiaoyu.vo.message.SendMessageVO;
 import org.springframework.stereotype.Service;
 
 

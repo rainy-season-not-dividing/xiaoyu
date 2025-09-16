@@ -1,4 +1,4 @@
-package com.xiaoyu.dto;
+package com.xiaoyu.dto.user;
 
 
 import lombok.Data;

@@ -8,7 +8,7 @@ import com.xiaoyu.entity.BlacklistsPO;
 import com.xiaoyu.exception.NotAllowedToBlackYourselfException;
 import com.xiaoyu.mapper.BlacklistsMapper;
 import com.xiaoyu.service.BlacklistsService;
-import com.xiaoyu.vo.BlacklistsVO;
+import com.xiaoyu.vo.user.BlacklistsVO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 

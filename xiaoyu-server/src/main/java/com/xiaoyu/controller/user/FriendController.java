@@ -1,16 +1,16 @@
 package com.xiaoyu.controller.user;
 
 
-import com.xiaoyu.dto.SendFriendRequestDTO;
-import com.xiaoyu.dto.SendMessageDTO;
+import com.xiaoyu.dto.friend.SendFriendRequestDTO;
+import com.xiaoyu.dto.friend.SendMessageDTO;
 import com.xiaoyu.entity.FriendMessagesPO;
 import com.xiaoyu.entity.FriendshipsPO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
 import com.xiaoyu.service.FriendMessagesService;
 import com.xiaoyu.service.FriendShipsService;
-import com.xiaoyu.vo.FriendlistVO;
-import com.xiaoyu.vo.SendMessageVO;
+import com.xiaoyu.vo.friend.FriendlistVO;
+import com.xiaoyu.vo.message.SendMessageVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;

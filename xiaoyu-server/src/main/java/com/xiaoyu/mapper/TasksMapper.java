@@ -3,7 +3,7 @@ package com.xiaoyu.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaoyu.entity.TasksPO;
-import com.xiaoyu.vo.GetTasksVO;
+import com.xiaoyu.vo.task.GetTasksVO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

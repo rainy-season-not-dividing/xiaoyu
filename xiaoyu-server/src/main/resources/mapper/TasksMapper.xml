@@ -6,7 +6,7 @@
 <mapper namespace="com.xiaoyu.mapper.TasksMapper">
 
     <!-- 1. 主结果映射 -->
-    <resultMap id="GetTasksVOMap" type="com.xiaoyu.vo.GetTasksVO">
+    <resultMap id="GetTasksVOMap" type="com.xiaoyu.vo.task.GetTasksVO">
         <id property="id" column="task_id"/>
         <result property="title" column="title"/>
         <result property="content" column="content"/>
@@ -17,20 +17,20 @@
         <result property="createdAt" column="created_at"/>
 
         <!-- 1.1 发布者 -->
-        <association property="publisher" javaType="com.xiaoyu.vo.GetTasksVO$PublisherVO">
+        <association property="publisher" javaType="com.xiaoyu.vo.task.GetTasksVO$PublisherVO">
             <id property="id" column="pub_id"/>
             <result property="nickname" column="pub_nickname"/>
             <result property="avatarUrl" column="pub_avatar"/>
         </association>
 
         <!-- 1.2 统计 -->
-        <association property="stats" javaType="com.xiaoyu.vo.GetTasksVO$StatsVO">
+        <association property="stats" javaType="com.xiaoyu.vo.task.GetTasksVO$StatsVO">
             <result property="viewCnt" column="view_cnt"/>
             <result property="orderCnt" column="order_cnt"/>
         </association>
 
         <!-- 1.3 文件列表 -->
-        <collection property="files" ofType="com.xiaoyu.vo.GetTasksVO$FileItemVO">
+        <collection property="files" ofType="com.xiaoyu.vo.task.GetTasksVO$FileItemVO">
             <id property="id" column="file_id"/>
             <result property="thumbUrl" column="thumb_url"/>
             <result property="fileUrl" column="file_url"/>
@@ -38,7 +38,7 @@
         </collection>
 
         <!-- 1.4 标签列表 -->
-        <collection property="tags" ofType="com.xiaoyu.vo.GetTasksVO$TagItemVO">
+        <collection property="tags" ofType="com.xiaoyu.vo.task.GetTasksVO$TagItemVO">
             <id property="id" column="tag_id"/>
             <result property="name" column="tag_name"/>
         </collection>

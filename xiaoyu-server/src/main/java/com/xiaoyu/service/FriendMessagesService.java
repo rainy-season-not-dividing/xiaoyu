@@ -1,10 +1,10 @@
 package com.xiaoyu.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.xiaoyu.dto.SendMessageDTO;
+import com.xiaoyu.dto.friend.SendMessageDTO;
 import com.xiaoyu.entity.FriendMessagesPO;
 import com.xiaoyu.result.PageResult;
-import com.xiaoyu.vo.SendMessageVO;
+import com.xiaoyu.vo.message.SendMessageVO;
 
 public interface FriendMessagesService extends IService<FriendMessagesPO> {
     SendMessageVO sendMessage(SendMessageDTO message);

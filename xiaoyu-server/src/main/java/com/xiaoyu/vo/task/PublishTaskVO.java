@@ -1,4 +1,4 @@
-package com.xiaoyu.vo;
+package com.xiaoyu.vo.task;
 
 
 import com.xiaoyu.entity.TasksPO;

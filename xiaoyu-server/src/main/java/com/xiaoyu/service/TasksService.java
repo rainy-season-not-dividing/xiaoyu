@@ -1,11 +1,11 @@
 package com.xiaoyu.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.xiaoyu.dto.PublishTaskDTO;
+import com.xiaoyu.dto.task.PublishTaskDTO;
 import com.xiaoyu.entity.TasksPO;
 import com.xiaoyu.result.PageResult;
-import com.xiaoyu.vo.GetTasksVO;
-import com.xiaoyu.vo.PublishTaskVO;
+import com.xiaoyu.vo.task.GetTasksVO;
+import com.xiaoyu.vo.task.PublishTaskVO;
 
 import java.util.Map;
 

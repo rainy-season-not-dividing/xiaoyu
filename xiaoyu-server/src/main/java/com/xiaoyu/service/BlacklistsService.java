@@ -3,7 +3,7 @@ package com.xiaoyu.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaoyu.entity.BlacklistsPO;
-import com.xiaoyu.vo.BlacklistsVO;
+import com.xiaoyu.vo.user.BlacklistsVO;
 
 public interface BlacklistsService extends IService<BlacklistsPO> {
     void addBlacklist(Long targetId);

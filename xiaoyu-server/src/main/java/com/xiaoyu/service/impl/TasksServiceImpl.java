@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
-import com.xiaoyu.dto.PublishTaskDTO;
+import com.xiaoyu.dto.task.PublishTaskDTO;
 import com.xiaoyu.entity.FavoritesPO;
 import com.xiaoyu.entity.TagItemsPO;
 import com.xiaoyu.entity.TaskFilesPO;
@@ -18,8 +18,8 @@ import com.xiaoyu.service.FavoritesService;
 import com.xiaoyu.service.TagItemsService;
 import com.xiaoyu.service.TaskFilesService;
 import com.xiaoyu.service.TasksService;
-import com.xiaoyu.vo.GetTasksVO;
-import com.xiaoyu.vo.PublishTaskVO;
+import com.xiaoyu.vo.task.GetTasksVO;
+import com.xiaoyu.vo.task.PublishTaskVO;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.xiaoyu.exception.NotExistsException;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

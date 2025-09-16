@@ -1,4 +1,4 @@
-package com.xiaoyu.vo;
+package com.xiaoyu.vo.friend;
 
 
 import com.xiaoyu.entity.FriendshipsPO;

@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.xiaoyu.mapper.TaskOrdersMapper">
 
-    <resultMap id="taskOrderListMap" type="com.xiaoyu.vo.ListTaskOrdersVO">
+    <resultMap id="taskOrderListMap" type="com.xiaoyu.vo.task.ListTaskOrdersVO">
         <id property="id" column="id"/>
         <result property="taskId" column="taskId"/>
         <result property="taskTitle" column="taskTitle"/>
@@ -11,12 +11,12 @@
         <result property="createdAt" column="createdAt"/>
         <result property="updatedAt" column="updatedAt"/>
 
-        <association property="publisher" javaType="com.xiaoyu.vo.ListTaskOrdersVO$User">
+        <association property="publisher" javaType="com.xiaoyu.vo.task.ListTaskOrdersVO$User">
             <id property="id" column="publishId"/>
             <result property="nickname" column="publisherNickname"/>
             <result property="avatarUrl" column="publisherAvatarUrl"/>
         </association>
-        <association property="receiver" javaType="com.xiaoyu.vo.ListTaskOrdersVO$User">
+        <association property="receiver" javaType="com.xiaoyu.vo.task.ListTaskOrdersVO$User">
             <id property="id" column="receiverId"/>
             <result property="nickname" column="receiverNickname"/>
             <result property="avatarUrl" column="receiverAvatarUrl"/>

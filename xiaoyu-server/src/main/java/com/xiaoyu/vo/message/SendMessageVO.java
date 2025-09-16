@@ -1,4 +1,4 @@
-package com.xiaoyu.vo;
+package com.xiaoyu.vo.message;
 
 import lombok.Builder;
 import lombok.Data;

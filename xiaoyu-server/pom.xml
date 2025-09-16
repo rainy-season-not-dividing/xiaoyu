@@ -7,12 +7,21 @@
 		<artifactId>xiaoyu</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
+	<groupId>com.xiaoyu.yuji</groupId>
 	<artifactId>xiaoyu-server-yuji</artifactId>
 	<name>xiaoyu-server</name>
 	<description>xiaoyu-server</description>
+	<version>0.0.1-SNAPSHOT</version>
+
 
 
 	<dependencies>
+
+		<dependency>
+			<groupId>com.xiaoyu.jiang</groupId>
+			<artifactId>xiaoyu-server-jiang</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -76,6 +85,16 @@
 			<groupId>com.baomidou</groupId>
 			<artifactId>mybatis-plus-spring-boot3-starter</artifactId>
 			<version>3.5.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.aliyun.oss</groupId>
+			<artifactId>aliyun-sdk-oss</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-elasticsearch</artifactId>
 		</dependency>
 
 

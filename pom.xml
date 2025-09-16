@@ -17,6 +17,7 @@
 
     <modules>
         <module>xiaoyu-server</module>
+        <module>xiaoyu-jiang</module>
     </modules>
 
     <properties>
@@ -115,3 +116,5 @@
     </dependencyManagement>
 
 </project>
+
+<!--我的-->

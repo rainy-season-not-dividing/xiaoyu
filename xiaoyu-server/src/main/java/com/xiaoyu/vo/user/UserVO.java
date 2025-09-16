@@ -1,4 +1,4 @@
-package com.xiaoyu.vo;
+package com.xiaoyu.vo.user;
 
 import lombok.Data;
 import java.time.LocalDateTime;

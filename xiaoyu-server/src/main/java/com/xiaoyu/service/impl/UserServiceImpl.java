@@ -5,16 +5,16 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
-import com.xiaoyu.dto.BindMobileDTO;
-import com.xiaoyu.dto.UserRealNameDTO;
-import com.xiaoyu.dto.UserSelfInfoDTO;
+import com.xiaoyu.dto.user.BindMobileDTO;
+import com.xiaoyu.dto.user.UserRealNameDTO;
+import com.xiaoyu.dto.user.UserSelfInfoDTO;
 import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.mapper.UserMapper;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.service.BlacklistsService;
 import com.xiaoyu.service.UserService;
-import com.xiaoyu.vo.BlacklistsVO;
-import com.xiaoyu.vo.UserVO;
+import com.xiaoyu.vo.user.BlacklistsVO;
+import com.xiaoyu.vo.user.UserVO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +40,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UsersPO> implements
         // 封装成PO类
         UsersPO usersPO = BeanUtil.copyProperties(userSelfInfoDTO, UsersPO.class);
         // update更新数据
-        updateById(usersPO);
+        saveOrUpdate(usersPO);  // 如果id为空，则新增
     }
 
     @Override

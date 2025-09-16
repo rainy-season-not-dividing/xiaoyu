@@ -1,12 +1,12 @@
 package com.xiaoyu.controller.task;
 
 
-import com.xiaoyu.dto.PublishTaskDTO;
+import com.xiaoyu.dto.task.PublishTaskDTO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
 import com.xiaoyu.service.TasksService;
-import com.xiaoyu.vo.GetTasksVO;
-import com.xiaoyu.vo.PublishTaskVO;
+import com.xiaoyu.vo.task.GetTasksVO;
+import com.xiaoyu.vo.task.PublishTaskVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
