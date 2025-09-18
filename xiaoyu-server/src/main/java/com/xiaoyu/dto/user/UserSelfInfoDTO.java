@@ -1,7 +1,10 @@
 package com.xiaoyu.dto.user;
 
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 用户资料修改 DTO
@@ -13,7 +16,7 @@ public class UserSelfInfoDTO {
     private String nickname;
 
     /** 头像URL */
-    private String avatarUrl;
+//    private String avatarUrl;
 
     /** 生日（YYYY-MM-DD） */
     private LocalDate birthday;
@@ -32,4 +35,7 @@ public class UserSelfInfoDTO {
 
     /** 粉丝列表可见范围 */
     private Integer privacyFans;
+
+    // 前端可多次 append("files", file)
+    private List<MultipartFile> files;
 }

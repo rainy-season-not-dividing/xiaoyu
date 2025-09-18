@@ -1,6 +1,6 @@
-package com.xiaoyu.mapper.es;
+package com.xiaoyu_j.mapper.es;
 
-import com.xiaoyu.vo.search.PostSearchVO;
+import com.xiaoyu_j.vo.search.PostSearchVO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;

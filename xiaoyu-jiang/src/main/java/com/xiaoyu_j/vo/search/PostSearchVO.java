@@ -1,4 +1,4 @@
-package com.xiaoyu.vo.search;
+package com.xiaoyu_j.vo.search;
 
 
 import lombok.AllArgsConstructor;

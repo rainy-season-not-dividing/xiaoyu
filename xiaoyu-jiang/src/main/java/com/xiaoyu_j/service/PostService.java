@@ -1,10 +1,10 @@
-package com.xiaoyu.service;
+package com.xiaoyu_j.service;
 
-import com.xiaoyu.dto.post.PostQueryDTO;
-import com.xiaoyu.dto.post.PostUpdateDTO;
-import com.xiaoyu.vo.common.PageResult;
-import com.xiaoyu.vo.post.PostVO;
-import com.xiaoyu.vo.search.PostSearchVO;
+import com.xiaoyu_j.dto.post.PostQueryDTO;
+import com.xiaoyu_j.dto.post.PostUpdateDTO;
+import com.xiaoyu_j.vo.common.PageResult;
+import com.xiaoyu_j.vo.post.PostVO;
+import com.xiaoyu_j.vo.search.PostSearchVO;
 
 public interface PostService {
 

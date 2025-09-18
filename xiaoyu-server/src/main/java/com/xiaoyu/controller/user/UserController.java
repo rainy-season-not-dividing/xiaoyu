@@ -15,6 +15,7 @@ import com.xiaoyu.vo.user.BlacklistsVO;
 import com.xiaoyu.vo.user.UserVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -41,8 +42,9 @@ public class UserController {
         return Result.success(userService.getById(BaseContext.getId()));
     }
 
-    @PutMapping("/profile")
-    public Result updateUserInfo(@RequestBody UserSelfInfoDTO userSelfInfoDTO){
+
+    @PutMapping(value="/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Result updateUserInfo(@ModelAttribute UserSelfInfoDTO userSelfInfoDTO){
         log.info("更新当前用户信息：{}",userSelfInfoDTO);
         userService.updateUserInfo(userSelfInfoDTO);
         return Result.success("更新成功");

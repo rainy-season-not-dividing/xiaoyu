@@ -4,6 +4,7 @@ import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
+import com.xiaoyu_j.entity.FilePO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -67,4 +68,27 @@ public class AliOssUtil {
 
         return stringBuilder.toString();
     }
+
+    public boolean deleteFile(String objectName) {
+        // 创建OSSClient实例
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+
+        try {
+            // 删除文件
+            ossClient.deleteObject(bucketName, objectName);
+            log.info("文件删除成功: {}", objectName);
+            return true;
+        } catch (OSSException oe) {
+            log.error("OSS删除文件失败: {}", oe.getErrorMessage());
+            return false;
+        } catch (ClientException ce) {
+            log.error("OSS客户端删除文件失败: {}", ce.getMessage());
+            return false;
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+    }
+
 }

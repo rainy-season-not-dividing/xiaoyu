@@ -1,28 +1,28 @@
-package com.xiaoyu.service.impl;
+package com.xiaoyu_j.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 
-import com.xiaoyu.context.BaseContext;
-import com.xiaoyu.dto.post.PostQueryDTO;
-import com.xiaoyu.dto.post.PostUpdateDTO;
-import com.xiaoyu.entity.PostPO;
-import com.xiaoyu.mapper.PostMapper;
-import com.xiaoyu.mapper.es.PostSearchRepository;
-import com.xiaoyu.service.PostService;
-import com.xiaoyu.vo.post.PostVO;
-import com.xiaoyu.vo.post.PostStatsVO;
-import com.xiaoyu.vo.post.PostUserActionsVO;
-import com.xiaoyu.vo.search.PostSearchVO;
+import com.xiaoyu_j.context.BaseContext;
+import com.xiaoyu_j.dto.post.PostQueryDTO;
+import com.xiaoyu_j.dto.post.PostUpdateDTO;
+import com.xiaoyu_j.entity.PostPO;
+import com.xiaoyu_j.mapper.PostMapper;
+import com.xiaoyu_j.mapper.es.PostSearchRepository;
+import com.xiaoyu_j.service.PostService;
+import com.xiaoyu_j.vo.post.PostVO;
+import com.xiaoyu_j.vo.post.PostStatsVO;
+import com.xiaoyu_j.vo.post.PostUserActionsVO;
+import com.xiaoyu_j.vo.search.PostSearchVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import com.xiaoyu.vo.common.PageResult;
+import com.xiaoyu_j.vo.common.PageResult;
 
 
 import java.util.List;

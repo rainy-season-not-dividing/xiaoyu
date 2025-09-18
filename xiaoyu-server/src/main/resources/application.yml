@@ -20,6 +20,30 @@ spring:
     password: ${xiaoyu.elasticsearch.password}
     ssl:
       verification-mode: none   # 开发环境
+#  rabbitmq:
+#    # RabbitMQ公共配置（与参考项目一致，确保连接兼容性）
+#    host: 192.168.88.128
+#    port: 5672
+#    username: admin
+#    password: admin
+#    publisher-confirm-type: correlated
+#    publisher-returns: true
+#    cache:
+#      channel:
+#        size: 50
+#      connection:
+#        mode: channel
+#    listener:
+#      simple:
+#        acknowledge-mode: manual
+#        retry:
+#          enabled: true
+#          max-attempts: 3
+#          initial-interval: 1000
+#          multiplier: 2
+#        default-requeue-rejected: false
+#        concurrency: 50
+#        max-concurrency: 100
   data:
     redis:
       host: ${xiaoyu.redis.host}

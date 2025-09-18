@@ -1,6 +1,7 @@
 package com.xiaoyu.dto.task;
 
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 //import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -27,8 +28,11 @@ public class PublishTaskDTO {
     private LocalDateTime expireAt;
 
     /** 文件ID数组 */
-    private List<Long> fileIds;
+//    private List<Long> fileIds;
 
     /** 标签ID数组 */
     private List<Integer> tagIds;
+
+    /** 任务图像 */
+    private List<MultipartFile> files;
 }

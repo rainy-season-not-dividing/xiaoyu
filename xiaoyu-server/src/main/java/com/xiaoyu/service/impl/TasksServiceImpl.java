@@ -14,19 +14,19 @@ import com.xiaoyu.entity.TaskFilesPO;
 import com.xiaoyu.entity.TasksPO;
 import com.xiaoyu.mapper.TasksMapper;
 import com.xiaoyu.result.PageResult;
-import com.xiaoyu.service.FavoritesService;
-import com.xiaoyu.service.TagItemsService;
-import com.xiaoyu.service.TaskFilesService;
-import com.xiaoyu.service.TasksService;
+import com.xiaoyu.service.*;
 import com.xiaoyu.vo.task.GetTasksVO;
 import com.xiaoyu.vo.task.PublishTaskVO;
+import com.xiaoyu.service.FilesService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.xiaoyu.exception.NotExistsException;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,11 +46,15 @@ public class TasksServiceImpl extends ServiceImpl<TasksMapper, TasksPO> implemen
     @Resource
     private FavoritesService favoritesService;
 
+    @Resource
+    private FilesService filesService;
+
     @Override
     @Transactional
     public PublishTaskVO publishTask(PublishTaskDTO publishTaskDTO) {
          // 获取当前用户id
         Long currentId = BaseContext.getId();
+
         // 封装tasks实体类
         TasksPO tasksPO = BeanUtil.copyProperties(publishTaskDTO,TasksPO.class);
             // 任务状态默认为 auditing 审核中
@@ -62,7 +66,15 @@ public class TasksServiceImpl extends ServiceImpl<TasksMapper, TasksPO> implemen
         save(tasksPO);
         // 封装task_files实体类
         Long taskId = tasksPO.getId();
-        List<Long> fileIds = publishTaskDTO.getFileIds();
+//        List<Long> fileIds = publishTaskDTO.getFileIds();
+        // 处理文件
+        List<MultipartFile> files = publishTaskDTO.getFiles();
+        List<Long> fileIds = new ArrayList<>();
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                fileIds.add((Long) filesService.uploadFile(file, "POST", currentId).get("fileId"));
+            }
+        }
         if(CollUtil.isNotEmpty(fileIds)){
             List<TaskFilesPO> taskFilesPOList = fileIds.stream()
                     .map(fileId->TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
@@ -150,7 +162,16 @@ public class TasksServiceImpl extends ServiceImpl<TasksMapper, TasksPO> implemen
         // 6、更新关联表  file_ids 和 tag_ids
         // 先删后增
         taskFilesService.remove(new LambdaQueryWrapper<TaskFilesPO>().eq(TaskFilesPO::getTaskId,taskId));
-        List<TaskFilesPO> taskFilesPOList = newTaskDTO.getFileIds().stream()
+        // 处理文件
+        Long currentId = BaseContext.getId();
+        List<MultipartFile> files = newTaskDTO.getFiles();
+        List<Long> fileIds = new ArrayList<>();
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                fileIds.add((Long) filesService.uploadFile(file, "POST", currentId).get("fileId"));
+            }
+        }
+        List<TaskFilesPO> taskFilesPOList = fileIds.stream()
                 .map(fileId -> TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
                 .toList();
         taskFilesService.saveBatch(taskFilesPOList);

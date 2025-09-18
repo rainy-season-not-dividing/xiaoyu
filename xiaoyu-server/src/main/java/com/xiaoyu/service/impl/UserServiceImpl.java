@@ -12,17 +12,25 @@ import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.mapper.UserMapper;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.service.BlacklistsService;
+import com.xiaoyu.service.FilesService;
 import com.xiaoyu.service.UserService;
 import com.xiaoyu.vo.user.BlacklistsVO;
 import com.xiaoyu.vo.user.UserVO;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, UsersPO> implements UserService {
 
     @Resource
     private BlacklistsService blacklistsService;
+
+    @Resource
+    private FilesService fileService;
 
 
 
@@ -39,6 +47,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UsersPO> implements
         Long userId = BaseContext.getId();
         // 封装成PO类
         UsersPO usersPO = BeanUtil.copyProperties(userSelfInfoDTO, UsersPO.class);
+        // 处理文件
+        List<MultipartFile> files = userSelfInfoDTO.getFiles();
+        String fileUrl = null;
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                fileUrl = fileService.uploadFile(file, "POST", userId).get("fileUrl").toString();
+            }
+        }
+        usersPO.setAvatarUrl(fileUrl);
         // update更新数据
         saveOrUpdate(usersPO);  // 如果id为空，则新增
     }
