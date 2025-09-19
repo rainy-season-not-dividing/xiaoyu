@@ -1,10 +1,9 @@
-package com.xiaoyu.util;
+package com.xiaoyua.utils;
 
 import com.aliyun.oss.ClientException;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
-import com.xiaoyua.entity.FilePO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +13,7 @@ import java.io.ByteArrayInputStream;
 @Data
 @AllArgsConstructor
 @Slf4j
-public class AliOssUtil {
+public class OssUtil {
 
     private String endpoint;
     private String accessKeyId;
@@ -23,7 +22,6 @@ public class AliOssUtil {
 
     /**
      * 文件上传
-     *
      * @param bytes
      * @param objectName
      * @return
@@ -64,11 +62,15 @@ public class AliOssUtil {
                 .append(objectName);
 
         log.info("文件上传到:{}", stringBuilder.toString());
-        // todo：不知道为什么，上传图片后，页面上不会呈现，感觉应该是访问图片的url有误
 
         return stringBuilder.toString();
     }
 
+    /**
+     * 删除文件
+     * @param objectName 对象名称
+     * @return 是否删除成功
+     */
     public boolean deleteFile(String objectName) {
         // 创建OSSClient实例
         OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
@@ -80,9 +82,19 @@ public class AliOssUtil {
             return true;
         } catch (OSSException oe) {
             log.error("OSS删除文件失败: {}", oe.getErrorMessage());
+            System.out.println("Caught an OSSException, which means your request made it to OSS, "
+                    + "but was rejected with an error response for some reason.");
+            System.out.println("Error Message:" + oe.getErrorMessage());
+            System.out.println("Error Code:" + oe.getErrorCode());
+            System.out.println("Request ID:" + oe.getRequestId());
+            System.out.println("Host ID:" + oe.getHostId());
             return false;
         } catch (ClientException ce) {
             log.error("OSS客户端删除文件失败: {}", ce.getMessage());
+            System.out.println("Caught an ClientException, which means the client encountered "
+                    + "a serious internal problem while trying to communicate with OSS, "
+                    + "such as not being able to access the network.");
+            System.out.println("Error Message:" + ce.getMessage());
             return false;
         } finally {
             if (ossClient != null) {
@@ -90,5 +102,4 @@ public class AliOssUtil {
             }
         }
     }
-
 }
