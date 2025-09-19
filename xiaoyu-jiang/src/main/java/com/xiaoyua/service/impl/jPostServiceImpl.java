@@ -27,8 +27,10 @@ import com.xiaoyua.vo.post.PostStatsVO;
 import com.xiaoyua.vo.post.PostUserActionsVO;
 import com.xiaoyua.vo.common.PageResult;
 import com.xiaoyua.vo.search.PostSearchVO;
+import com.xiaoyua.vo.user.UserSimpleVO;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class jPostServiceImpl implements jPostService {
 
     @Autowired
@@ -361,6 +364,19 @@ public class jPostServiceImpl implements jPostService {
 
         // 填充用户信息这里需要根据userId查询用户信息
         // TODO: 实现用户信息查询和转换
+        UserPO userPO = userMapper.selectById(postPO.getUserId());
+        if (userPO != null) {
+            UserSimpleVO u = new UserSimpleVO();
+            u.setId(userPO.getId());
+            u.setNickname(userPO.getNickname());
+            u.setAvatarUrl(userPO.getAvatarUrl());
+            u.setGender(userPO.getGender());
+            u.setCampusId(userPO.getCampusId());
+            u.setIsRealName(userPO.getIsRealName());
+            u.setCreatedAt(userPO.getCreatedAt());
+            postVO.setUser(u);
+        }
+
 
         // 填充统计信息（来自 post_stats）
         PostStatsVO stats = new PostStatsVO();
@@ -390,6 +406,7 @@ public class jPostServiceImpl implements jPostService {
 
         // 填充当前用户的操作状态
         Long currentUserId = BaseContext.getCurrentId();
+        log.info("currentUserId: " + currentUserId);
         if (currentUserId != null) {
             PostUserActionsVO userActions = new PostUserActionsVO();
             // // 暂时设置默认值，等待服务接口方法确认

@@ -17,10 +17,8 @@ public interface jAuthService {
 
     /**
      * 用户注册
-     * @param username 用户名
      * @param password 密码
-     * @param nickname 昵称
      * @return 注册结果
      */
-    LoginVO register(String username, String password, String nickname);
+    LoginVO register(String account, String password);
 }

@@ -25,19 +25,15 @@ public class UserAuthPO {
     /** 唯一标识：openid/手机号 */
     private String identifier;
 
+    /** 账号 */
+    private String account;
+
     /** 密码或 access_token */
     private String credential;
 
     /** 验证通过时间 */
     private LocalDateTime verifiedAt;
 
-    /** 创建时间 */
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createdAt;
-
-    /** 更新时间 */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
 
     public enum IdentityType {
         QQ, WECHAT, MOBILE, APPLE, PASSWORD

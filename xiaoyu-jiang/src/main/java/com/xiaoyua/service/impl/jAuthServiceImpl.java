@@ -1,6 +1,7 @@
 package com.xiaoyua.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.auth.PasswordLoginDTO;
 import com.xiaoyua.entity.UserAuthPO;
 import com.xiaoyua.entity.UserPO;
@@ -12,6 +13,7 @@ import com.xiaoyua.utils.PasswordUtil;
 import com.xiaoyua.vo.auth.LoginVO;
 import com.xiaoyua.vo.user.UserSimpleVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ import java.time.LocalDateTime;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class jAuthServiceImpl implements jAuthService {
 
     private final jUserMapper jUserMapper;
@@ -33,9 +36,10 @@ public class jAuthServiceImpl implements jAuthService {
         // 1. 根据用户名查找用户认证信息
         LambdaQueryWrapper<UserAuthPO> authQuery = new LambdaQueryWrapper<>();
         authQuery.eq(UserAuthPO::getIdentityType, UserAuthPO.IdentityType.PASSWORD)
-                .eq(UserAuthPO::getIdentifier, loginDTO.getUsername());
+                .eq(UserAuthPO::getAccount, loginDTO.getAccount());
         
         UserAuthPO userAuth = jUserAuthMapper.selectOne(authQuery);
+
         if (userAuth == null) {
             throw new RuntimeException("用户名或密码错误");
         }
@@ -68,10 +72,13 @@ public class jAuthServiceImpl implements jAuthService {
         // 7. 构建用户简单信息
         UserSimpleVO userSimpleVO = new UserSimpleVO();
         userSimpleVO.setId(user.getId());
-        userSimpleVO.setUsername(user.getUsername());
         userSimpleVO.setNickname(user.getNickname());
         userSimpleVO.setAvatarUrl(user.getAvatarUrl());
         userSimpleVO.setGender(user.getGender());
+
+        // 7.1 设置用户id
+        BaseContext.setCurrentId(user.getId());
+        log.info("set user id: {}", BaseContext.getCurrentId());
 
         // 8. 返回登录结果
         return new LoginVO(accessToken, refreshToken, expiresIn, userSimpleVO);
@@ -79,11 +86,11 @@ public class jAuthServiceImpl implements jAuthService {
 
     @Override
     @Transactional
-    public LoginVO register(String username, String password, String nickname) {
+    public LoginVO register(String account, String password) {
         // 1. 检查用户名是否已存在
         LambdaQueryWrapper<UserAuthPO> authQuery = new LambdaQueryWrapper<>();
         authQuery.eq(UserAuthPO::getIdentityType, UserAuthPO.IdentityType.PASSWORD)
-                .eq(UserAuthPO::getIdentifier, username);
+                .eq(UserAuthPO::getIdentifier, account);
         
         UserAuthPO existingAuth = jUserAuthMapper.selectOne(authQuery);
         if (existingAuth != null) {
@@ -92,8 +99,7 @@ public class jAuthServiceImpl implements jAuthService {
 
         // 2. 创建用户
         UserPO user = new UserPO();
-        user.setUsername(username);
-        user.setNickname(nickname);
+        user.setNickname(account);
         user.setGender(0);
         user.setStatus(0);
         user.setIsRealName(0);
@@ -107,13 +113,12 @@ public class jAuthServiceImpl implements jAuthService {
 
         // 3. 创建用户认证信息
         UserAuthPO userAuth = new UserAuthPO();
+        userAuth.setAccount(account);
         userAuth.setUserId(user.getId());
         userAuth.setIdentityType(UserAuthPO.IdentityType.PASSWORD);
-        userAuth.setIdentifier(username);
+        userAuth.setIdentifier(account);
         userAuth.setCredential(PasswordUtil.encode(password));
         userAuth.setVerifiedAt(LocalDateTime.now());
-        userAuth.setCreatedAt(LocalDateTime.now());
-        userAuth.setUpdatedAt(LocalDateTime.now());
         
         jUserAuthMapper.insert(userAuth);
 
@@ -125,7 +130,6 @@ public class jAuthServiceImpl implements jAuthService {
         // 5. 构建用户简单信息
         UserSimpleVO userSimpleVO = new UserSimpleVO();
         userSimpleVO.setId(user.getId());
-        userSimpleVO.setUsername(user.getUsername());
         userSimpleVO.setNickname(user.getNickname());
         userSimpleVO.setAvatarUrl(user.getAvatarUrl());
         userSimpleVO.setGender(user.getGender());
