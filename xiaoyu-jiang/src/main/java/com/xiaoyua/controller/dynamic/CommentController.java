@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.comment.CommentCreateDTO;
 import com.xiaoyua.result.Result;
-import com.xiaoyua.service.CommentService;
-import com.xiaoyua.service.LikeService;
+import com.xiaoyua.service.jCommentService;
+import com.xiaoyua.service.jLikeService;
 import com.xiaoyua.vo.comment.CommentVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,10 +25,10 @@ import jakarta.validation.Valid;
 @Validated
 public class CommentController {
     @Autowired
-    LikeService likeService;
+    jLikeService jLikeService;
 
     @Autowired
-    private CommentService commentService;
+    private jCommentService jCommentService;
     @PostMapping("/{post_id}")
     @Operation(summary = "发表评论", description = "对动态发表评论")
     public Result addComment(
@@ -36,7 +36,7 @@ public class CommentController {
             @RequestBody @Valid CommentCreateDTO comment){
         log.info("addComment postId={}, comment={}", postId, comment);
         comment.setPostId(postId); // 确保设置正确的postId
-        commentService.addComment(comment);
+        jCommentService.addComment(comment);
         return Result.success("评论成功");
     }
 
@@ -45,7 +45,7 @@ public class CommentController {
     public Result deleteComment(
             @Parameter(description = "评论ID") @PathVariable("comment_id") Long commentId){
         log.info("deleteComment commentId={}", commentId);
-        commentService.deleteComment(commentId);
+        jCommentService.deleteComment(commentId);
         return Result.success("删除评论成功");
     }
 
@@ -57,7 +57,7 @@ public class CommentController {
             @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") @Min(1) Integer size,
             @Parameter(description = "排序方式") @RequestParam(defaultValue = "latest") String sort) {
         log.info("getCommentsByPostId postId={}, page={}, size={}, sort={}", postId, page, size, sort);
-        IPage<CommentVO> comments = commentService.getComments(postId, page, size, sort);
+        IPage<CommentVO> comments = jCommentService.getComments(postId, page, size, sort);
         return Result.success(comments);
     }
 
@@ -67,7 +67,7 @@ public class CommentController {
             @Parameter(description = "评论ID") @PathVariable("comment_id") Long commentId) {
         Long userId = BaseContext.getCurrentId();
         log.info("likeComment commentId={}, userId={}", commentId, userId);
-        likeService.addLike(commentId, userId, TargetType.COMMENT);
+        jLikeService.addLike(commentId, userId, TargetType.COMMENT);
         return Result.success("点赞成功");
     }
 
@@ -77,7 +77,7 @@ public class CommentController {
             @Parameter(description = "评论ID") @PathVariable("comment_id") Long commentId) {
         Long userId = BaseContext.getCurrentId();
         log.info("unlikeComment commentId={}, userId={}", commentId, userId);
-        likeService.deleteLike(commentId, userId, TargetType.COMMENT);
+        jLikeService.deleteLike(commentId, userId, TargetType.COMMENT);
         return Result.success("取消点赞成功");
     }
 }

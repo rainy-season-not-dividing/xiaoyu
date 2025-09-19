@@ -13,12 +13,12 @@ import org.springframework.context.annotation.Configuration;
  * 
  * @author xiaoyu
  */
-@Configuration
+@Configuration("ossConfig_j")
 @EnableConfigurationProperties(AliOssProperties.class)
 @Slf4j
 public class OssConfiguration {
 
-    @Bean
+    @Bean("aliOssUtil_j")
     @ConditionalOnMissingBean
     public OssUtil aliOssUtil(AliOssProperties aliOssProperties){
         log.info("开始创建阿里云文件上传工具类对象：{}",aliOssProperties);

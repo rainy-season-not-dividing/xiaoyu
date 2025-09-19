@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.xiaoyu.mapper.TasksMapper">
+<mapper namespace="com.xiaoyu.mapper.yujiTasksMapper">
 
     <!-- 1. 主结果映射 -->
     <resultMap id="GetTasksVOMap" type="com.xiaoyu.vo.task.GetTasksVO">

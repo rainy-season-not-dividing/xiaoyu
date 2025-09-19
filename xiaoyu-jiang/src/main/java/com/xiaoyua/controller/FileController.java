@@ -2,7 +2,7 @@ package com.xiaoyua.controller;
 
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.result.Result;
-import com.xiaoyua.service.FileService;
+import com.xiaoyua.service.jFileService;
 import com.xiaoyua.vo.file.FileVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,7 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileController {
 
     @Autowired
-    private FileService fileService;
+    private jFileService jFileService;
 
     @PostMapping("/upload")
     @Operation(summary = "上传文件", description = "上传文件至OSS，并记录文件信息")
@@ -45,7 +45,7 @@ public class FileController {
         // TODO: 从JWT token中获取用户ID，这里暂时使用固定值
         Long userId = BaseContext.getCurrentId();
         
-        FileVO fileVO = fileService.uploadFile(file, bizType, userId);
+        FileVO fileVO = jFileService.uploadFile(file, bizType, userId);
         
         return Result.success("上传成功", fileVO);
     }
@@ -56,7 +56,7 @@ public class FileController {
             @Parameter(description = "文件ID", required = true)
             @PathVariable Long fileId) {
         
-        FileVO fileVO = fileService.getFileById(fileId);
+        FileVO fileVO = jFileService.getFileById(fileId);
         return Result.success(fileVO);
     }
     
@@ -71,7 +71,7 @@ public class FileController {
         // TODO: 从JWT token中获取用户ID，这里暂时使用固定值
         Long userId = BaseContext.getCurrentId();
         
-        boolean success = fileService.deleteFile(fileId, userId);
+        boolean success = jFileService.deleteFile(fileId, userId);
         
         if (success) {
             return Result.success("删除成功");

@@ -4,12 +4,11 @@ import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.post.PostCreateDTO;
 import com.xiaoyua.dto.post.PostForm;
 import com.xiaoyua.dto.post.PostUpdateDTO;
-import com.xiaoyua.service.PostService;
-import com.xiaoyua.service.CommentService;
-import com.xiaoyua.service.LikeService;
-import com.xiaoyua.service.FavService;
-import com.xiaoyua.service.ShareService;
-import com.xiaoyua.service.FileService;
+import com.xiaoyua.service.jPostService;
+import com.xiaoyua.service.jLikeService;
+import com.xiaoyua.service.jFavService;
+import com.xiaoyua.service.jShareService;
+import com.xiaoyua.service.jFileService;
 import com.xiaoyua.vo.post.PostVO;
 import com.xiaoyua.result.Result;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.util.Map;
@@ -38,20 +36,20 @@ import jakarta.validation.constraints.Min;
 @Tag(name = "动态管理", description = "动态相关接口")
 public class PostController {
     @Autowired
-    private PostService postService;
+    private jPostService jPostService;
     
     @Autowired
-    private LikeService likeService;
+    private jLikeService jLikeService;
     
     @Autowired
-    private FavService favService;
+    private jFavService jFavService;
     
     @Autowired
-    private ShareService shareService;
+    private jShareService jShareService;
 
 
     @Autowired
-    private FileService fileService;
+    private jFileService jFileService;
 
 
     @PostMapping(value = "/posts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -74,7 +72,7 @@ public class PostController {
         if (files != null && !files.isEmpty()) {
             List<Long> fileIds = new ArrayList<>();
             for (MultipartFile file : files) {
-                var fileVO = fileService.uploadFile(file, "POST", userId);
+                var fileVO = jFileService.uploadFile(file, "POST", userId);
                 if (fileVO != null && fileVO.getId() != null) {
                     fileIds.add(fileVO.getId());
                 }
@@ -82,7 +80,7 @@ public class PostController {
             dto.setFileIds(fileIds);
         }
 
-        PostVO postVO = postService.createPost(dto, userId);
+        PostVO postVO = jPostService.createPost(dto, userId);
         return Result.success("发布成功", postVO);
     }
 
@@ -91,9 +89,9 @@ public class PostController {
     public Result addLike(@PathVariable("post_id") @Min(1) Long postId) {
         log.info("addLike postId={}", postId);
         Long userId = BaseContext.getCurrentId();
-        likeService.addLike(postId, userId, TargetType.POST);
+        jLikeService.addLike(postId, userId, TargetType.POST);
         // 返回最新的点赞数量
-        long likeCount = likeService.getLikeCount(postId, TargetType.POST);
+        long likeCount = jLikeService.getLikeCount(postId, TargetType.POST);
         return Result.success("点赞成功", Map.of("like_cnt", likeCount));
     }
 
@@ -102,10 +100,10 @@ public class PostController {
     public Result deleteLike(@PathVariable("post_id") @Min(1) Long postId) {
         log.info("deleteLike postId={}", postId);
         Long userId = BaseContext.getCurrentId();
-        likeService.deleteLike(postId, userId, TargetType.POST);
+        jLikeService.deleteLike(postId, userId, TargetType.POST);
         
         // 返回最新的点赞数量
-        long likeCount = likeService.getLikeCount(postId, TargetType.POST);
+        long likeCount = jLikeService.getLikeCount(postId, TargetType.POST);
         return Result.success("取消点赞成功", Map.of("like_cnt", likeCount));
     }
 
@@ -114,8 +112,8 @@ public class PostController {
     public Result addFav(@PathVariable("post_id") @Min(1) Long postId) {
         log.info("addFav postId={}", postId);
         Long userId = BaseContext.getCurrentId();
-        favService.addFavorite(postId, userId, TargetType.POST);
-        long favCount = favService.getFavoriteCount(postId, TargetType.POST);
+        jFavService.addFavorite(postId, userId, TargetType.POST);
+        long favCount = jFavService.getFavoriteCount(postId, TargetType.POST);
         return Result.success("收藏成功", Map.of("fav_cnt", favCount));
     }
     
@@ -124,8 +122,8 @@ public class PostController {
     public Result deleteFav(@PathVariable("post_id") @Min(1) Long postId) {
         log.info("deleteFav postId={}", postId);
         Long userId = BaseContext.getCurrentId();
-        favService.deleteFavorite(postId, userId, TargetType.POST);
-        long favCount = favService.getFavoriteCount(postId, TargetType.POST);
+        jFavService.deleteFavorite(postId, userId, TargetType.POST);
+        long favCount = jFavService.getFavoriteCount(postId, TargetType.POST);
         return Result.success("取消收藏成功", Map.of("fav_cnt", favCount));
     }
 
@@ -133,7 +131,7 @@ public class PostController {
     @Operation(summary = "转发动态")
     public Result addShare(@PathVariable("post_id") @Min(1) Long postId){
         log.info("addShare postId={}", postId);
-        shareService.addShare(postId, BaseContext.getCurrentId());
+        jShareService.addShare(postId, BaseContext.getCurrentId());
         return Result.success("转发成功");
     }
 
@@ -141,7 +139,7 @@ public class PostController {
     @Operation(summary = "获取热门动态（按浏览数倒序，默认前10条）")
     public Result<List<PostVO>> getHotPosts(@RequestParam(value = "limit", required = false) Integer limit) {
         log.info("listHot limit={}", limit);
-        var list = postService.listHot(limit);
+        var list = jPostService.listHot(limit);
         return Result.success("success", list);
     }
 
@@ -151,7 +149,7 @@ public class PostController {
                               @RequestParam(value = "size", required = false) Integer size,
                               @RequestParam(value = "sort", required = false) String sort) {
         log.info("listAll page={}, size={}, sort={}", page, size, sort);
-        var pageResult = postService.listAll(page, size, sort);
+        var pageResult = jPostService.listAll(page, size, sort);
         return Result.success("success", pageResult);
     }
 
@@ -162,7 +160,7 @@ public class PostController {
                                  @RequestParam(value = "size", required = false) Integer size,
                                  @RequestParam(value = "sort", required = false) String sort) {
         log.info("listByUser userId={}, page={}, size={}, sort={}", userId, page, size, sort);
-        var pageResult = postService.listByUser(userId, page, size, sort);
+        var pageResult = jPostService.listByUser(userId, page, size, sort);
         return Result.success("success", pageResult);
     }
 
@@ -177,7 +175,7 @@ public class PostController {
         
         try {
             // 调用服务层获取动态详情
-            PostVO postVO = postService.getPostDetail(postId);
+            PostVO postVO = jPostService.getPostDetail(postId);
             return Result.success("获取成功", postVO);
         } catch (RuntimeException e) {
             log.warn("获取动态详情失败: postId={}, error={}", postId, e.getMessage());
@@ -189,7 +187,7 @@ public class PostController {
     @Operation(summary = "更新动态")
     public Result updatePost(@RequestBody @Valid PostUpdateDTO postUpdateDTO, @PathVariable("post_id") @Min(1) Long postId) {
         log.info("updatePost postUpdateDTO={}, postId={}", postUpdateDTO, postId);
-        postService.updatePost(postUpdateDTO,postId);
+        jPostService.updatePost(postUpdateDTO,postId);
         return Result.success("更新成功");
     }
 

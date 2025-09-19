@@ -3,7 +3,7 @@ package com.xiaoyua.controller.mq;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.result.Result;
-import com.xiaoyua.service.NotificationService;
+import com.xiaoyua.service.jNotificationService;
 import com.xiaoyua.vo.notification.NotificationVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,7 +27,7 @@ import java.util.Map;
 public class NotificationController {
 
     @Autowired
-    private NotificationService notificationService;
+    private jNotificationService jNotificationService;
 
     @GetMapping
     @Operation(summary = "获取通知列表", description = "获取当前登录用户的通知列表")
@@ -45,7 +45,7 @@ public class NotificationController {
         log.info("获取通知列表: userId={}, type={}, status={}, page={}, size={}", 
                 userId, type, status, page, size);
         
-        IPage<NotificationVO> notifications = notificationService.getNotifications(userId, type, status, page, size);
+        IPage<NotificationVO> notifications = jNotificationService.getNotifications(userId, type, status, page, size);
         return Result.success(notifications);
     }
 
@@ -58,7 +58,7 @@ public class NotificationController {
         Long userId = BaseContext.getCurrentId();
         log.info("标记通知为已读: userId={}, notificationId={}", userId, notificationId);
         
-        boolean success = notificationService.markAsRead(userId, notificationId);
+        boolean success = jNotificationService.markAsRead(userId, notificationId);
         
         if (success) {
             return Result.success("通知已标记为已读");
@@ -73,7 +73,7 @@ public class NotificationController {
         Long userId = BaseContext.getCurrentId();
         log.info("标记所有通知为已读: userId={}", userId);
         
-        int count = notificationService.markAllAsRead(userId);
+        int count = jNotificationService.markAllAsRead(userId);
         
         return Result.success("所有通知已标记为已读");
     }
@@ -84,7 +84,7 @@ public class NotificationController {
         Long userId = BaseContext.getCurrentId();
         log.info("获取未读通知数量: userId={}", userId);
         
-        long count = notificationService.getUnreadCount(userId);
+        long count = jNotificationService.getUnreadCount(userId);
         
         Map<String, Object> data = new HashMap<>();
         data.put("count", count);

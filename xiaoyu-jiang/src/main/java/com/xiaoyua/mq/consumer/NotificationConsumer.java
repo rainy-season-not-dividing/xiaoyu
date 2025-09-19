@@ -2,9 +2,9 @@ package com.xiaoyua.mq.consumer;
 
 import com.xiaoyua.config.MessageQueueConstants;
 import com.xiaoyua.entity.NotificationPO;
-import com.xiaoyua.mapper.NotificationMapper;
+import com.xiaoyua.mapper.jNotificationMapper;
 import com.xiaoyua.mq.message.NotificationMessage;
-import com.xiaoyua.service.OfflineMessageService;
+import com.xiaoyua.service.jOfflineMessageService;
 import com.xiaoyua.websocket.UnifiedWebSocketHandler;
 import org.springframework.web.socket.WebSocketSession;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +26,13 @@ import java.util.Map;
 public class NotificationConsumer {
     
     @Autowired
-    private NotificationMapper notificationMapper;
+    private jNotificationMapper jNotificationMapper;
     
     @Autowired
     private UnifiedWebSocketHandler webSocketHandler;
     
     @Autowired
-    private OfflineMessageService offlineMessageService;
+    private jOfflineMessageService jOfflineMessageService;
     
     /**
      * 处理通知推送消息
@@ -45,7 +45,7 @@ public class NotificationConsumer {
             
             // 1. 保存通知到数据库
             NotificationPO notification = convertToNotificationPO(message);
-            int result = notificationMapper.insert(notification);
+            int result = jNotificationMapper.insert(notification);
             
             if (result <= 0) {
                 log.error("保存通知到数据库失败: messageId={}", message.getMessageId());
@@ -60,7 +60,7 @@ public class NotificationConsumer {
                 log.info("用户离线，存储离线通知: userId={}, messageId={}", 
                         message.getUserId(), message.getMessageId());
                 
-                boolean stored = offlineMessageService.storeOfflineNotification(message, notification.getId());
+                boolean stored = jOfflineMessageService.storeOfflineNotification(message, notification.getId());
                 if (!stored) {
                     log.error("存储离线通知消息失败: messageId={}, userId={}", 
                             message.getMessageId(), message.getUserId());

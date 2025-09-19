@@ -1,6 +1,6 @@
 package com.xiaoyua.task;
 
-import com.xiaoyua.service.OfflineMessageService;
+import com.xiaoyua.service.jOfflineMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class OfflineMessageCleanupTask {
     
     @Autowired
-    private OfflineMessageService offlineMessageService;
+    private jOfflineMessageService jOfflineMessageService;
     
     /**
      * 清理过期的离线消息
@@ -27,7 +27,7 @@ public class OfflineMessageCleanupTask {
         try {
             log.info("开始清理过期离线消息");
             
-            int cleanedCount = offlineMessageService.cleanExpiredMessages();
+            int cleanedCount = jOfflineMessageService.cleanExpiredMessages();
             
             if (cleanedCount > 0) {
                 log.info("清理过期离线消息完成: 清理数量={}", cleanedCount);

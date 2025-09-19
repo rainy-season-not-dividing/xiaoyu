@@ -3,7 +3,7 @@ package com.xiaoyu.controller.tag;
 
 import com.xiaoyu.entity.TagsPO;
 import com.xiaoyu.result.Result;
-import com.xiaoyu.service.TagsService;
+import com.xiaoyu.service.yujiTagsService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,13 +16,13 @@ import java.util.List;
 public class TagController {
 
     @Resource
-    private TagsService tagsService;
+    private yujiTagsService yujiTagsService;
 
     @GetMapping("/tags")
     public Result<List<TagsPO>> getTags() {
         log.info("获取所有的tag");
         // todo：标签权重没有加上
-        List<TagsPO> tags = tagsService.list();
+        List<TagsPO> tags = yujiTagsService.list();
         return Result.success(tags);
     }
 

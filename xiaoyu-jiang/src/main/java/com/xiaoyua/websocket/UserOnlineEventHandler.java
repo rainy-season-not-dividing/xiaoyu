@@ -1,6 +1,6 @@
 package com.xiaoyua.websocket;
 
-import com.xiaoyua.service.OfflineMessageService;
+import com.xiaoyua.service.jOfflineMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class UserOnlineEventHandler {
     
     @Autowired
-    private OfflineMessageService offlineMessageService;
+    private jOfflineMessageService jOfflineMessageService;
     
     /**
      * 处理用户上线事件
@@ -28,7 +28,7 @@ public class UserOnlineEventHandler {
             log.info("处理用户上线事件: userId={}", userId);
             
             // 推送离线消息
-            int pushedCount = offlineMessageService.pushOfflineMessagesOnUserOnline(userId);
+            int pushedCount = jOfflineMessageService.pushOfflineMessagesOnUserOnline(userId);
             
             if (pushedCount > 0) {
                 log.info("用户上线推送离线消息完成: userId={}, pushedCount={}", userId, pushedCount);
@@ -49,7 +49,7 @@ public class UserOnlineEventHandler {
      */
     public Long getUserPendingMessageCount(Long userId) {
         try {
-            return offlineMessageService.getUserPendingMessageCount(userId);
+            return jOfflineMessageService.getUserPendingMessageCount(userId);
         } catch (Exception e) {
             log.error("获取用户未读离线消息数量失败: userId={}, error={}", userId, e.getMessage(), e);
             return 0L;

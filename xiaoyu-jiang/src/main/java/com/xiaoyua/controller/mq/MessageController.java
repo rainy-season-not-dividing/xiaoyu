@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.message.MessageCreateDTO;
 import com.xiaoyua.result.Result;
-import com.xiaoyua.service.MessageService;
+import com.xiaoyua.service.jMessageService;
 import com.xiaoyua.vo.message.MessageVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,7 +30,7 @@ import javax.validation.Valid;
 public class MessageController {
     
     @Autowired
-    private MessageService messageService;
+    private jMessageService jMessageService;
     
     @PostMapping
     @Operation(summary = "发送私信", description = "向好友发送私信")
@@ -39,7 +39,7 @@ public class MessageController {
         Long fromUserId = BaseContext.getCurrentId();
         log.info("发送私信: fromUserId={}, toId={}, content={}", fromUserId, messageDTO.getToId(), messageDTO.getContent());
         
-        MessageVO messageVO = messageService.sendMessage(fromUserId, messageDTO);
+        MessageVO messageVO = jMessageService.sendMessage(fromUserId, messageDTO);
         return Result.success(messageVO);
     }
     
@@ -53,7 +53,7 @@ public class MessageController {
         Long userId = BaseContext.getCurrentId();
         log.info("获取聊天记录: userId={}, friendId={}, page={}, size={}", userId, friendId, page, size);
         
-        IPage<MessageVO> chatHistory = messageService.getChatHistory(userId, friendId, page, size);
+        IPage<MessageVO> chatHistory = jMessageService.getChatHistory(userId, friendId, page, size);
         return Result.success(chatHistory);
     }
     
@@ -65,7 +65,7 @@ public class MessageController {
         Long userId = BaseContext.getCurrentId();
         log.info("标记消息已读: userId={}, fromId={}", userId, fromId);
         
-        int count = messageService.markMessagesAsRead(userId, fromId);
+        int count = jMessageService.markMessagesAsRead(userId, fromId);
         log.info("标记了 {} 条消息为已读", count);
         
         return Result.success();
@@ -77,7 +77,7 @@ public class MessageController {
         Long userId = BaseContext.getCurrentId();
         log.info("获取未读消息数量: userId={}", userId);
         
-        Long unreadCount = messageService.getUnreadMessageCount(userId);
+        Long unreadCount = jMessageService.getUnreadMessageCount(userId);
         return Result.success(unreadCount);
     }
 }

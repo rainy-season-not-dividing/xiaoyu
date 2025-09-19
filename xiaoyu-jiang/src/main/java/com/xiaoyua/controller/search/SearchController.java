@@ -1,7 +1,7 @@
 package com.xiaoyua.controller.search;
 
 import com.xiaoyua.result.Result;
-import com.xiaoyua.service.PostService;
+import com.xiaoyua.service.jPostService;
 import com.xiaoyua.vo.common.PageResult;
 import com.xiaoyua.vo.search.PostSearchVO;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class SearchController {
     @Autowired
-    private PostService postService;
+    private jPostService jPostService;
 
     @GetMapping
     public Result<PageResult<PostSearchVO>> postSearch(
@@ -24,7 +24,7 @@ public class SearchController {
             @RequestParam(required=false, defaultValue = "1") Integer page,
             @RequestParam(required=false, defaultValue = "20") Integer size) {
 
-        return Result.success(postService.searchExact(keyword,page,size));
+        return Result.success(jPostService.searchExact(keyword,page,size));
     }
 
 }

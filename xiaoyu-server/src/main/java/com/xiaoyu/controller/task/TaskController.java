@@ -4,7 +4,7 @@ package com.xiaoyu.controller.task;
 import com.xiaoyu.dto.task.PublishTaskDTO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
-import com.xiaoyu.service.TasksService;
+import com.xiaoyu.service.yujiTasksService;
 import com.xiaoyu.vo.task.GetTasksVO;
 import com.xiaoyu.vo.task.PublishTaskVO;
 import jakarta.annotation.Resource;
@@ -19,12 +19,12 @@ import java.util.Map;
 public class TaskController {
 
     @Resource
-    private TasksService tasksService;
+    private yujiTasksService yujiTasksService;
 
     @PostMapping
     public Result<PublishTaskVO> publishTask(PublishTaskDTO publishTaskDTO){
         log.info("发布任务：{}",publishTaskDTO);
-        return Result.success(tasksService.publishTask(publishTaskDTO));
+        return Result.success(yujiTasksService.publishTask(publishTaskDTO));
     }
 
     @GetMapping
@@ -36,7 +36,7 @@ public class TaskController {
             @RequestParam(required=false) Integer tagId     // 标签ID
             ){
         log.info("获取任务列表");
-        return Result.success(tasksService.getTasks(page,size,status,keyword,tagId));
+        return Result.success(yujiTasksService.getTasks(page,size,status,keyword,tagId));
     }
 
     @GetMapping("/my-published")
@@ -45,7 +45,7 @@ public class TaskController {
             @RequestParam(required=false,defaultValue="20") Integer size
     ){
         log.info("获取我发布的任务列表");
-        return Result.success(tasksService.getMyPublishedTasks(page,size));
+        return Result.success(yujiTasksService.getMyPublishedTasks(page,size));
     }
 
     @GetMapping("/my-received")
@@ -54,40 +54,40 @@ public class TaskController {
             @RequestParam(required=false,defaultValue="20") Integer size
     ){
         log.info("获取我接取的任务列表");
-        return Result.success(tasksService.getMyReceivedTasks(page,size));
+        return Result.success(yujiTasksService.getMyReceivedTasks(page,size));
     }
 
     @GetMapping("/{task_id}")
     public Result<GetTasksVO> getTask(@PathVariable Long taskId){
         log.info("获取任务详情：{}",taskId);
-        return Result.success(tasksService.getTask(taskId));
+        return Result.success(yujiTasksService.getTask(taskId));
     }
 
 
     @PutMapping("/{task_id}")
     public Result<Map<String,Object>> updateTask(@PathVariable Long taskId, @RequestBody PublishTaskDTO newTaskDTO){
         log.info("更新任务：{}",taskId);
-        return Result.success(tasksService.updateTask(taskId,newTaskDTO));
+        return Result.success(yujiTasksService.updateTask(taskId,newTaskDTO));
     }
 
     @DeleteMapping("/{task_id}")
     public Result deleteTask(@PathVariable Long taskId){
         log.info("删除任务：{}",taskId);
-        tasksService.removeTask(taskId);
+        yujiTasksService.removeTask(taskId);
         return Result.success("任务删除成功");
     }
 
     @PostMapping("/{task_id}/favorite")
     public Result favoriteTask(@PathVariable Long taskId){
         log.info("收藏任务：{}",taskId);
-        tasksService.favoriteTask(taskId);
+        yujiTasksService.favoriteTask(taskId);
         return Result.success("收藏成功");
     }
 
     @DeleteMapping("/{task_id}/favorite")
     public Result removeFavoriteTask(@PathVariable Long taskId){
         log.info("取消收藏任务：{}",taskId);
-        tasksService.removeFavoriteTask(taskId);
+        yujiTasksService.removeFavoriteTask(taskId);
         return Result.success("取消收藏成功");
     }
 

@@ -2,7 +2,7 @@ package com.xiaoyua.controller;
 
 import com.xiaoyua.dto.auth.PasswordLoginDTO;
 import com.xiaoyua.result.Result;
-import com.xiaoyua.service.AuthService;
+import com.xiaoyua.service.jAuthService;
 import com.xiaoyua.vo.auth.LoginVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class AuthController {
 
-    private final AuthService authService;
+    private final jAuthService jAuthService;
 
     /**
      * 用户名密码登录
@@ -41,7 +41,7 @@ public class AuthController {
                 return Result.error("密码长度必须在6-20个字符之间");
             }
 
-            LoginVO loginVO = authService.passwordLogin(loginDTO);
+            LoginVO loginVO = jAuthService.passwordLogin(loginDTO);
             log.info("用户登录成功: {}", loginDTO.getUsername());
             return Result.success(loginVO);
         } catch (Exception e) {
@@ -82,7 +82,7 @@ public class AuthController {
                 return Result.error("昵称长度不能超过30个字符");
             }
 
-            LoginVO loginVO = authService.register(username, password, nickname);
+            LoginVO loginVO = jAuthService.register(username, password, nickname);
             log.info("用户注册成功: {}", username);
             return Result.success(loginVO);
         } catch (Exception e) {

@@ -3,7 +3,7 @@ package com.xiaoyua.mq.consumer;
 import com.xiaoyua.config.MessageQueueConstants;
 import com.xiaoyua.mq.message.PrivateMessage;
 import com.xiaoyua.mq.producer.MessageProducer;
-import com.xiaoyua.service.OfflineMessageService;
+import com.xiaoyua.service.jOfflineMessageService;
 import com.xiaoyua.websocket.UnifiedWebSocketHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -29,7 +29,7 @@ public class MessageConsumer {
     private MessageProducer messageProducer;
     
     @Autowired
-    private OfflineMessageService offlineMessageService;
+    private jOfflineMessageService jOfflineMessageService;
     
     /**
      * 处理私信推送消息
@@ -52,7 +52,7 @@ public class MessageConsumer {
                         message.getToUserId(), message.getMessageId());
                 
                 // 存储离线私信消息
-                boolean stored = offlineMessageService.storeOfflinePrivateMessage(message);
+                boolean stored = jOfflineMessageService.storeOfflinePrivateMessage(message);
                 if (!stored) {
                     log.error("存储离线私信消息失败: messageId={}, toUserId={}", 
                             message.getMessageId(), message.getToUserId());

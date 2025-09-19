@@ -11,11 +11,11 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 配置类，用于创建AliossUtil对象
  */
-@Configuration
+@Configuration("ossConfig_yuji")
 @Slf4j
 public class OssConfiguration {
 
-    @Bean
+    @Bean("aliOssUtil_yuji")
     @ConditionalOnMissingBean
     public AliOssUtil aliOssUtil(AliOssProperties aliOssProperties){
         log.info("开始创建阿里云文件上传工具类对象{}",  aliOssProperties);

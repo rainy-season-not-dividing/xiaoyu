@@ -5,7 +5,7 @@ import com.xiaoyua.common.context.ContextManager;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import com.xiaoyua.dto.message.MessageCreateDTO;
-import com.xiaoyua.service.MessageService;
+import com.xiaoyua.service.jMessageService;
 import com.xiaoyua.vo.message.MessageVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
     private UserOnlineEventHandler userOnlineEventHandler;
     
     @Autowired
-    private MessageService messageService;
+    private jMessageService jMessageService;
     
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -174,7 +174,7 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
             messageDTO.setMessageType((String) messageData.getOrDefault("message_type", "TEXT"));
             
             // 3. 直接调用现有业务逻辑：好友验证、数据库保存、Redis缓存、MQ推送
-            MessageVO messageVO = messageService.sendMessage(userId, messageDTO);
+            MessageVO messageVO = jMessageService.sendMessage(userId, messageDTO);
             
             // 4. 幂等推送给接收者（避免MQ消费者重复推送）
             String dedupKey = "ws:push:" + messageVO.getId() + ":" + messageVO.getToId();
