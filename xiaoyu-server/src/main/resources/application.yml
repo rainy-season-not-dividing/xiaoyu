@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: yyyy-MM-dd HH:mm:ss
   config:
     import: application_j.yml
   profiles:
@@ -24,7 +28,7 @@ spring:
       verification-mode: none   # 开发环境
   rabbitmq:
     # RabbitMQ公共配置（与参考项目一致，确保连接兼容性）
-    host: 192.168.88.131
+    host: 192.168.88.133
     port: 5672
     username: admin
     password: admin
@@ -63,6 +67,9 @@ mybatis-plus:
     map-underscore-to-camel-case: true
 
 logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
   level:
     com:
       xiaoyu:
@@ -77,7 +84,7 @@ xiaoyu:
     # 设置jwt签名加密时使用的秘钥
     admin-secret-key: "xiao yu"
     # 设置jwt过期时间
-    admin-ttl: 7200000
+    admin-ttl: 720000000
     # 设置前端传递过来的令牌名称【在前端进行设置，需要与前端协调】
     admin-token-name: token
 

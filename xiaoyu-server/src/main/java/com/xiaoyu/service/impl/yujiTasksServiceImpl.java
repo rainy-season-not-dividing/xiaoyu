@@ -97,7 +97,7 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
     }
 
     @Override
-    public PageResult<GetTasksVO> getTasks(Integer page, Integer size, String status, String keyword, Integer tagId) {
+    public PageResult<GetTasksVO> getTasks(Integer page, Integer size, TasksPO.Status status, String keyword, Integer tagId) {
         // 封装Page
         Page<GetTasksVO> pageSet = Page.of(page,size);
         // mysql查询，自定义sql语句

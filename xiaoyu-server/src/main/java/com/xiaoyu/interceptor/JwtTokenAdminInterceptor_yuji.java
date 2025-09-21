@@ -1,6 +1,6 @@
-package com.xiaoyua.interceptor;
+package com.xiaoyu.interceptor;
 
-import com.xiaoyua.context.BaseContext;
+import com.xiaoyu.context.BaseContext;
 import com.xiaoyua.properties.JwtProperties;
 import com.xiaoyua.utils.JwtUtil;
 import jakarta.annotation.Resource;
@@ -13,13 +13,12 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 
-
 /**
  * 登录验证拦截器
  */
 @Component
 @Slf4j
-public class JwtTokenAdminInterceptor implements HandlerInterceptor {
+public class JwtTokenAdminInterceptor_yuji implements HandlerInterceptor {
 
     @Autowired
     private JwtProperties jwtProperties;
@@ -39,6 +38,12 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
             //当前拦截到的不是动态方法，直接放行
             return true;
         }
+        // 对于 /posts 路径，GET 方法放行，其他方法需要验证
+        String requestURI = request.getRequestURI();
+        String method = request.getMethod();
+        if (("/posts".equals(requestURI) || "/tasks".equals(requestURI)) && "GET".equalsIgnoreCase(method)) {
+            return true; // 直接放行
+        }
 
         //1、从请求头中获取令牌  -- token
         String token = request.getHeader(jwtProperties.getAdminTokenName());
@@ -55,6 +60,7 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
 
             //设置当前登录用户的ID
             BaseContext.setCurrentId(empId);
+            com.xiaoyua.context.BaseContext.setCurrentId(empId);
 
 
             //3、通过，放行

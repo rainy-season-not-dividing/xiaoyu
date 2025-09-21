@@ -1,7 +1,10 @@
 package com.xiaoyu.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -22,13 +25,18 @@ public class UsersPO {
     private String avatarUrl;
 
     /** 生日 */
-    private LocalDateTime birthday;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthday;
 
     /** 性别：0未知 1男 2女 */
     private Integer gender;
 
     /** 所属校区 ID */
     private Long campusId;
+
+    /** 所属校区名 */
+    @TableField(exist = false)
+    private String campusName;
 
     /** QQ 授权 openid */
     private String qqOpenid;
@@ -59,9 +67,11 @@ public class UsersPO {
 
     /** 注册时间 */
     @TableField(fill = FieldFill.INSERT_UPDATE)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     /** 更新时间 */
     @TableField(fill = FieldFill.UPDATE)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 }

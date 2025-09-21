@@ -26,7 +26,7 @@
         <fastjson>1.2.83</fastjson>
         <commons.lang>2.6</commons.lang>
         <druid>1.2.1</druid>
-        <aliyun.sdk.oss>3.10.2</aliyun.sdk.oss>
+        <aliyun.sdk.oss>3.8.1</aliyun.sdk.oss>
         <knife4j>3.0.2</knife4j>
         <aspectj>1.9.4</aspectj>
         <jjwt>0.9.1</jjwt>

@@ -10,11 +10,15 @@ import lombok.Data;
 @TableName("topic_posts")
 public class TopicPostsPO {
 
+    /** 主键 ID */
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
+
     /** 话题 ID */
-    @TableId
+
     private Long topicId;
 
     /** 动态 ID */
-    @TableId
+
     private Long postId;
 }

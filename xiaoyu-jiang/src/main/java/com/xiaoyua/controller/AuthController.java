@@ -1,5 +1,6 @@
 package com.xiaoyua.controller;
 
+import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.auth.PasswordLoginDTO;
 import com.xiaoyua.result.Result;
 import com.xiaoyua.service.jAuthService;
@@ -85,5 +86,14 @@ public class AuthController {
             log.error("用户注册失败: {}, 错误: {}", account, e.getMessage());
             return Result.error(e.getMessage());
         }
+    }
+
+    /**
+     * 退出登录
+     */
+    @PostMapping("/logout")
+    public Result<String> logout() {
+        BaseContext.clearCurrentId();
+        return Result.success("退出登录成功");
     }
 }

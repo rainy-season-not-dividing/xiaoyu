@@ -1,5 +1,6 @@
 package com.xiaoyu.dto.task;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +26,7 @@ public class PublishTaskDTO {
     private String visibility;
 
     /** 截止报名时间（ISO8601格式） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expireAt;
 
     /** 文件ID数组 */

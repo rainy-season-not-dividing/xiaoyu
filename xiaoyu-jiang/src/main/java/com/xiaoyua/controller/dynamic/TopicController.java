@@ -3,6 +3,7 @@ package com.xiaoyua.controller.dynamic;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.xiaoyua.result.Result;
 import com.xiaoyua.service.jTopicService;
+import com.xiaoyua.vo.common.PageResult;
 import com.xiaoyua.vo.post.PostVO;
 import com.xiaoyua.vo.topic.TopicSimpleVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,13 +70,13 @@ public class TopicController {
      */
     @GetMapping("/{topic_id}/posts")
     @Operation(summary = "获取话题下的动态列表", description = "获取指定话题下的动态列表")
-    public Result<IPage<PostVO>> getPostsByTopicId(
+    public Result<PageResult<PostVO>> getPostsByTopicId(
             @Parameter(description = "话题ID") @PathVariable("topic_id") Long topicId,
             @Parameter(description = "页码，默认1") @RequestParam(defaultValue = "1") @Min(1) Integer page,
             @Parameter(description = "每页数量，默认20") @RequestParam(defaultValue = "20") @Min(1) Integer size,
             @Parameter(description = "排序：hot/latest") @RequestParam(required = false) String sort) {
         log.info("获取话题下的动态列表，topicId={}, page={}, size={}, sort={}", topicId, page, size, sort);
         IPage<PostVO> posts = jTopicService.getPostsByTopicId(topicId, page, size, sort);
-        return Result.success("success", posts);
+        return Result.success(new PageResult<>(posts.getRecords(), page, size, posts.getTotal()));
     }
 }

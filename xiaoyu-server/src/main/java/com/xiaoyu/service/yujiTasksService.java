@@ -12,7 +12,7 @@ import java.util.Map;
 public interface yujiTasksService extends IService<TasksPO> {
     PublishTaskVO publishTask(PublishTaskDTO publishTaskDTO);
 
-    PageResult<GetTasksVO> getTasks(Integer page, Integer size, String status, String keyword, Integer tagId);
+    PageResult<GetTasksVO> getTasks(Integer page, Integer size, TasksPO.Status status, String keyword, Integer tagId);
 
     PageResult<GetTasksVO> getMyPublishedTasks(Integer page, Integer size);
 

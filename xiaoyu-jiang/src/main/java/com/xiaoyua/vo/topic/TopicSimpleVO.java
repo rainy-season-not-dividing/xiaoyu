@@ -31,7 +31,6 @@ public class TopicSimpleVO {
     /**
      * 动态数量
      */
-    @JsonProperty("post_cnt")
     private Integer postCount;
     
 }

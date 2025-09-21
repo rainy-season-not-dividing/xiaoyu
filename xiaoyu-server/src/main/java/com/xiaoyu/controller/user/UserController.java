@@ -17,6 +17,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -39,7 +40,7 @@ public class UserController {
     @GetMapping("/me")
     public Result<UsersPO> getUserSelfInfo(){
         log.info("获取当前用户的信息");
-        return Result.success(yujiUserService.getById(BaseContext.getId()));
+        return Result.success(yujiUserService.getUserSelfInfo(BaseContext.getId()));
     }
 
 

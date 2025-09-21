@@ -2,6 +2,7 @@ package com.xiaoyu.controller.task;
 
 
 import com.xiaoyu.dto.task.PublishTaskDTO;
+import com.xiaoyu.entity.TasksPO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
 import com.xiaoyu.service.yujiTasksService;
@@ -22,7 +23,7 @@ public class TaskController {
     private yujiTasksService yujiTasksService;
 
     @PostMapping
-    public Result<PublishTaskVO> publishTask(PublishTaskDTO publishTaskDTO){
+    public Result<PublishTaskVO> publishTask(@ModelAttribute PublishTaskDTO publishTaskDTO){
         log.info("发布任务：{}",publishTaskDTO);
         return Result.success(yujiTasksService.publishTask(publishTaskDTO));
     }
@@ -31,7 +32,7 @@ public class TaskController {
     public Result<PageResult<GetTasksVO>> getTasks(
             @RequestParam(required=false,defaultValue="1") Integer page,
             @RequestParam(required=false,defaultValue="20") Integer size,
-            @RequestParam(required=false) String status,    // 任务状态
+            @RequestParam(required=false) TasksPO.Status status,    // 任务状态
             @RequestParam(required=false) String keyword,   // 关键字，关键字搜索，标题或内容
             @RequestParam(required=false) Integer tagId     // 标签ID
             ){
@@ -65,7 +66,7 @@ public class TaskController {
 
 
     @PutMapping("/{task_id}")
-    public Result<Map<String,Object>> updateTask(@PathVariable Long taskId, @RequestBody PublishTaskDTO newTaskDTO){
+    public Result<Map<String,Object>> updateTask(@PathVariable Long taskId, @ModelAttribute PublishTaskDTO newTaskDTO){
         log.info("更新任务：{}",taskId);
         return Result.success(yujiTasksService.updateTask(taskId,newTaskDTO));
     }

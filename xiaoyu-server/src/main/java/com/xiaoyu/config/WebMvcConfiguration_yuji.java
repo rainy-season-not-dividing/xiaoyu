@@ -1,6 +1,6 @@
-package com.xiaoyua.config;
+package com.xiaoyu.config;
 
-import com.xiaoyua.interceptor.JwtTokenAdminInterceptor;
+import com.xiaoyu.interceptor.JwtTokenAdminInterceptor_yuji;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -11,22 +11,23 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupp
 /**
  * 配置类：配置web层相关组件
  */
-//@Configuration
+@Configuration
 @Slf4j
-public class WebMvcConfiguration extends WebMvcConfigurationSupport {
+public class WebMvcConfiguration_yuji extends WebMvcConfigurationSupport {
 
     @Autowired
-    private JwtTokenAdminInterceptor jwtTokenAdminInterceptor;
+    private JwtTokenAdminInterceptor_yuji jwtTokenAdminInterceptorYuji;
 
     // 注册自定义拦截器
     protected void addInterceptors(InterceptorRegistry registry){
         log.info("开始注册自定义拦截器...");
-        registry.addInterceptor(jwtTokenAdminInterceptor)
+        registry.addInterceptor(jwtTokenAdminInterceptorYuji)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
                         "/auth/password/login",
                         "/auth/register",
-                        "/posts/**",
+//                        "/tasks/",
+//                        "/posts",
                         "/error"
                         );
     }

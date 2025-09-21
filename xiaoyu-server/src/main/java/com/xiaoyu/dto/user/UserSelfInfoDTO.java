@@ -25,7 +25,7 @@ public class UserSelfInfoDTO {
     private Integer gender;
 
     /** 校区ID */
-    private Long campusId;
+    private String campusName;
 
     /** 手机号可见范围：0公开 1好友 2仅自己 */
     private Integer privacyMobile;

@@ -2,16 +2,19 @@ package com.xiaoyu.service.impl;
 
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.user.BindMobileDTO;
 import com.xiaoyu.dto.user.UserRealNameDTO;
 import com.xiaoyu.dto.user.UserSelfInfoDTO;
+import com.xiaoyu.entity.CampusPO;
 import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.mapper.yujiUserMapper;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.service.yujiBlacklistsService;
+import com.xiaoyu.service.yujiCampusesService;
 import com.xiaoyu.service.yujiFilesService;
 import com.xiaoyu.service.yujiUserService;
 import com.xiaoyu.vo.user.BlacklistsVO;
@@ -31,11 +34,23 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
     @Resource
     private yujiFilesService fileService;
 
+    @Resource
+    private yujiCampusesService campusesService;
 
+
+    @Override
+    public UsersPO getUserSelfInfo(Long id) {
+        UsersPO userInfo = getById(id);
+        Long campusId = userInfo.getCampusId();
+        userInfo.setCampusName(campusesService.getById(campusId).getName());
+        return userInfo;
+    }
 
     @Override
     public UserVO getUserPublicInfo(Long userId) {
         UsersPO userInfo = getById(userId);
+        Long campusId = userInfo.getCampusId();
+        userInfo.setCampusName(campusesService.getById(campusId).getName());
         // todo:还要拿到用户粉丝、关注数
         return BeanUtil.copyProperties(userInfo,UserVO.class);
     }
@@ -56,6 +71,17 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
         }
         usersPO.setAvatarUrl(fileUrl);
         // update更新数据
+        usersPO.setId(userId);
+        // 查询校区是否存在：不存在则新增，存在则直接拿去校区id
+        String campusName = userSelfInfoDTO.getCampusName();
+        CampusPO campusPO = campusesService.getOne(new LambdaQueryWrapper<CampusPO>().eq(CampusPO::getName, campusName));
+        if(campusPO==null){
+            campusPO = new CampusPO();
+            campusPO.setName(campusName);
+            campusesService.save(campusPO);
+            // todo:校区地址待添加
+        }
+        usersPO.setCampusId(campusPO.getId());
         saveOrUpdate(usersPO);  // 如果id为空，则新增
     }
 
@@ -89,6 +115,8 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
         Page<BlacklistsVO> blackPageInfo = yujiBlacklistsService.getBlackList(new Page<>(page,pageSize),userId);
         return new PageResult<>(blackPageInfo.getRecords(),page,pageSize,blackPageInfo.getTotal());
     }
+
+
 
 
 }

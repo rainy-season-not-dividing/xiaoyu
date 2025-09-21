@@ -52,11 +52,14 @@ public class PostController {
     private jFileService jFileService;
 
 
-    @PostMapping(value = "/posts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "发布动态（@ModelAttribute 混合表单：表单字段 + files）")
     public Result<PostVO> createPost(@Valid @ModelAttribute PostForm form) {
         Long userId = BaseContext.getCurrentId();
-
+        log.info("createPost title={}, content={}, campusId={}, visibility={}, poiLat={}, poiLng={}, poiName={}",
+                form.getTitle(), form.getContent()
+        );
+        log.info("这里的userId: {}",userId);
         // 将表单映射到 DTO
         PostCreateDTO dto = new PostCreateDTO();
         dto.setTitle(form.getTitle());
@@ -72,6 +75,7 @@ public class PostController {
         if (files != null && !files.isEmpty()) {
             List<Long> fileIds = new ArrayList<>();
             for (MultipartFile file : files) {
+                log.info("这里的userId: {}",userId);
                 var fileVO = jFileService.uploadFile(file, "POST", userId);
                 if (fileVO != null && fileVO.getId() != null) {
                     fileIds.add(fileVO.getId());
@@ -153,7 +157,7 @@ public class PostController {
         return Result.success("success", pageResult);
     }
 
-    @GetMapping("/{user_id}")
+    @GetMapping("/user/{user_id}")
     @Operation(summary = "获取指定用户的动态列表")
     public Result getPostsByUser(@PathVariable("user_id") @Min(1) Long userId,
                                  @RequestParam(value = "page", required = false) Integer page,

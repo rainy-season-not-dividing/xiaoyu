@@ -1,5 +1,6 @@
 package com.xiaoyu.vo.user;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -20,9 +21,10 @@ public class UserVO {
     private String avatarUrl;
 
     /** 生日 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime birthday;
 
-    private  String mobile;
+    private String mobile;
 
     /** 性别：0未知 1男 2女 */
     private Integer gender;
@@ -46,6 +48,7 @@ public class UserVO {
     private Integer privacyFans;
 
     /** 注册时间 0公开 1好友 2仅自己 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     /** 用户统计信息 */

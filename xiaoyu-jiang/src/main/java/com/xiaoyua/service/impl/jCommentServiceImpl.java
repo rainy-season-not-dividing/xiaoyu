@@ -87,7 +87,6 @@ public class jCommentServiceImpl implements jCommentService {
     /**
      * 查询一篇文章的全部评论（含二级回复）
      */
-    @Override
     public IPage<CommentVO> getComments(Long postId, int page, int size, String sort) {
         //先查一级评论parent_id = 0
         IPage<CommentPO> poPage = jCommentMapper.selectPage(
@@ -120,11 +119,13 @@ public class jCommentServiceImpl implements jCommentService {
         /*拼Vo（一级 二级 user @用户 点赞信息*/
         List<CommentVO> voList = poPage.getRecords().stream().map(root -> {
             CommentVO vo = new CommentVO();
-            BeanUtil.copyProperties(root, vo);          // 同名字段快速拷贝（ Hutool 工具，Spring 的 BeanUtils 也行）
-
+//            BeanUtil.copyProperties(root, vo);          // 同名字段快速拷贝（ Hutool 工具，Spring 的 BeanUtils 也行）
+            vo.setId(root.getId());
+            vo.setContent(root.getContent());
+            vo.setParentId(root.getParentId());
+            vo.setCreatedAt(root.getCreatedAt());
             // 发评论的用户信息
             vo.setUser(buildUserVo(root.getUserId()));
-
             /*@用户 JSON 数组  -> List<UserVo>*/
             vo.setAtUsers(parseAtUsers(root.getAtUsers()));
 

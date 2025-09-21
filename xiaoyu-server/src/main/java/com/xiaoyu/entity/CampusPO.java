@@ -28,8 +28,10 @@ public class CampusPO {
     private String address;
 
     /** 创建时间 */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
     /** 更新时间 */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 }

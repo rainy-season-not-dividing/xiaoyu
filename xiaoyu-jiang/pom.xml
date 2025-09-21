@@ -117,7 +117,6 @@
 		<dependency>
 			<groupId>com.aliyun.oss</groupId>
 			<artifactId>aliyun-sdk-oss</artifactId>
-			<version>3.17.4</version>
 		</dependency>
 
 		<!-- JWT -->

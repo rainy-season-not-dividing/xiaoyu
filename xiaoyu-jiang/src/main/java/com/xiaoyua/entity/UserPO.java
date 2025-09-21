@@ -31,6 +31,8 @@ public class UserPO {
     /** 所属校区 ID */
     private Long campusId;
 
+
+
     /** QQ 授权 openid */
     private String qqOpenid;
 

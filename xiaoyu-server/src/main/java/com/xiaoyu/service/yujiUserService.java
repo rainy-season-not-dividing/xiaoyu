@@ -20,4 +20,6 @@ public interface yujiUserService extends IService<UsersPO> {
     void bindMobileDTO(BindMobileDTO bindMobileDTO);
 
     PageResult<BlacklistsVO> getBlacklist(Integer page, Integer pageSize);
+
+    UsersPO getUserSelfInfo(Long id);
 }

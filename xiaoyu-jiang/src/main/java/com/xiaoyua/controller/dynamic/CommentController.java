@@ -7,6 +7,7 @@ import com.xiaoyua.result.Result;
 import com.xiaoyua.service.jCommentService;
 import com.xiaoyua.service.jLikeService;
 import com.xiaoyua.vo.comment.CommentVO;
+import com.xiaoyua.vo.common.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +18,8 @@ import org.springframework.validation.annotation.Validated;
 import jakarta.validation.constraints.Min;
 import com.xiaoyua.common.enums.TargetType;
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/comments")
@@ -49,16 +52,16 @@ public class CommentController {
         return Result.success("删除评论成功");
     }
 
-    @GetMapping
+    @GetMapping("/{post_id}")
     @Operation(summary = "获取动态评论列表", description = "获取指定动态的评论列表")
-    public Result<IPage<CommentVO>> getCommentsByPostId(
-            @Parameter(description = "动态ID") @RequestParam("post_id") Long postId,
+    public Result<PageResult<CommentVO>> getCommentsByPostId(
+            @PathVariable("post_id") Long postId,
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") @Min(1) Integer page,
             @Parameter(description = "每页数量") @RequestParam(defaultValue = "20") @Min(1) Integer size,
-            @Parameter(description = "排序方式") @RequestParam(defaultValue = "latest") String sort) {
+            @Parameter(description = "排序方式") @RequestParam(required = false, defaultValue = "latest") String sort) {
         log.info("getCommentsByPostId postId={}, page={}, size={}, sort={}", postId, page, size, sort);
         IPage<CommentVO> comments = jCommentService.getComments(postId, page, size, sort);
-        return Result.success(comments);
+        return Result.success(new PageResult<>(comments.getRecords(),page,size,comments.getTotal()));
     }
 
     @PostMapping("/{comment_id}/like")

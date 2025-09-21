@@ -18,11 +18,15 @@ import com.xiaoyu.service.yujiFriendMessagesService;
 import com.xiaoyu.service.yujiFriendShipsService;
 import com.xiaoyu.vo.friend.FriendlistVO;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 
 @Service
+@Slf4j
 public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMapper, FriendshipsPO> implements yujiFriendShipsService {
 
     @Resource
@@ -123,11 +127,20 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
         // todo:前端协调 "，accepted：不要分页查询   pending： 分页查询"
         // userID
         Long userId = BaseContext.getId();
-        // 设置page
-        Page<FriendlistVO> pageSet = new Page<>(page,pageSize);
-        // 自定义sql语句，得到结果的page
-        Page<FriendlistVO> pageInfo = yujiFriendShipsMapper.getFriendlist(pageSet,userId,status);
-        // 封装成PageResult类型并返回
-        return new PageResult<>(pageInfo.getRecords(),page,pageSize,pageInfo.getTotal());
+        log.info("当前的userId:{}",userId);
+        PageResult<FriendlistVO> pageResult = null;
+        if(status == FriendshipsPO.Status.ACCEPTED){
+            List<FriendlistVO> pageInfo = yujiFriendShipsMapper.getFriendlist(userId,status);
+            pageResult = new PageResult<>(pageInfo,1,1, (long) pageInfo.size());
+        }
+        else{
+            // 设置page
+            Page<FriendlistVO> pageSet = new Page<>(page,pageSize);
+            // 自定义sql语句，得到结果的page
+            Page<FriendlistVO> pageInfo = yujiFriendShipsMapper.getFriendlist(pageSet,userId,status);
+            // 封装成PageResult类型并返回
+            pageResult = new PageResult<>(pageInfo.getRecords(),page,pageSize,pageInfo.getTotal());
+        }
+        return pageResult;
     }
 }

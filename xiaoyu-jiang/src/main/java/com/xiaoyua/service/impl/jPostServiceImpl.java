@@ -7,27 +7,22 @@ import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.post.PostCreateDTO;
 import com.xiaoyua.dto.post.PostQueryDTO;
 import com.xiaoyua.dto.post.PostUpdateDTO;
-import com.xiaoyua.entity.PostPO;
-import com.xiaoyua.entity.PostFilePO;
-import com.xiaoyua.entity.PostStatPO;
-import com.xiaoyua.mapper.es.yujiPostSearchRepository;
-import com.xiaoyua.mapper.jPostMapper;
-import com.xiaoyua.mapper.jPostFileMapper;
-import com.xiaoyua.mapper.jPostStatMapper;
+import com.xiaoyua.entity.*;
+import com.xiaoyua.mapper.*;
+import com.xiaoyua.es.yujiPostSearchRepository;
 import com.xiaoyua.service.jLikeService;
 import com.xiaoyua.service.jPostService;
-import com.xiaoyua.service.jShareService;
 import com.xiaoyua.service.jFavService;
-import com.xiaoyua.service.jCommentService;
 import com.xiaoyua.service.jMessageService;
-import com.xiaoyua.mapper.jUserMapper;
-import com.xiaoyua.entity.UserPO;
+import com.xiaoyua.vo.file.FileSimpleVO;
 import com.xiaoyua.vo.post.PostVO;
 import com.xiaoyua.vo.post.PostStatsVO;
 import com.xiaoyua.vo.post.PostUserActionsVO;
 import com.xiaoyua.vo.common.PageResult;
 import com.xiaoyua.vo.search.PostSearchVO;
+import com.xiaoyua.vo.topic.TopicSimpleVO;
 import com.xiaoyua.vo.user.UserSimpleVO;
+import com.xiaoyua.vo.user.UserVO;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +34,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,17 +56,19 @@ public class jPostServiceImpl implements jPostService {
 
     // 依赖接口而非实现，降低耦合
     private final jLikeService likeService;
-    private final jCommentService commentService;
-    private final jShareService shareService;
     private final jFavService favService;
     private final jMessageService messageService;
     private final jUserMapper userMapper;
     private final jPostStatMapper postStatMapper;
+    private final jFileMapper fileMapper;
+    private final jTopicPostMapper topicPostMapper;
+    private final jTopicMapper topicMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PostVO createPost(PostCreateDTO postCreateDTO, Long userId) {
         // 基础校验
+        System.out.println(postCreateDTO.toString());
         if (postCreateDTO == null) {
             throw new IllegalArgumentException("参数不能为空");
         }
@@ -83,6 +83,7 @@ public class jPostServiceImpl implements jPostService {
         post.setContent(postCreateDTO.getContent());
         post.setCampusId(postCreateDTO.getCampusId());
         if (postCreateDTO.getVisibility() != null) {
+            System.out.println(postCreateDTO.getVisibility());
             post.setVisibility(PostPO.Visibility.valueOf(postCreateDTO.getVisibility()));
         } else {
             post.setVisibility(PostPO.Visibility.PUBLIC);
@@ -96,6 +97,18 @@ public class jPostServiceImpl implements jPostService {
         post.setUpdatedAt(LocalDateTime.now());
 
         postMapper.insert(post);
+
+        // 将新增的post写进es
+        PostSearchVO searchVO = new PostSearchVO();
+        searchVO.setId(post.getId());
+        searchVO.setTitle(post.getTitle());
+        searchVO.setContent(post.getContent());
+        searchVO.setCreatedAt(post.getCreatedAt());
+        UserPO user = userMapper.selectById(post.getUserId());
+        searchVO.setUser(new PostSearchVO.UserVO(user.getId(), user.getNickname(), user.getAvatarUrl()));
+        // 写入es
+        repository.save(searchVO);
+
         // 初始化统计记录
         postStatMapper.initIfAbsent(post.getId());
 
@@ -146,6 +159,22 @@ public class jPostServiceImpl implements jPostService {
         IPage<PostPO> postPage = postMapper.selectPage(page, queryWrapper);
         List<PostVO> vos = postPage.getRecords().stream().map(this::convertToVO)
                 .collect(java.util.stream.Collectors.toList());
+
+
+        // 模拟数据加入es中
+//        List<PostSearchVO> searchVOs = vos.stream().map(
+//                postVO->{
+//                    PostSearchVO searchVO = new PostSearchVO();
+//                    searchVO.setId(postVO.getId());
+//                    searchVO.setTitle(postVO.getTitle());
+//                    searchVO.setContent(postVO.getContent());
+//                    searchVO.setCreatedAt(postVO.getCreatedAt());
+//                    searchVO.setUser(new PostSearchVO.UserVO(postVO.getUser().getId(), postVO.getUser().getNickname(), postVO.getUser().getAvatarUrl()));
+//                    return searchVO;
+//                }
+//        ).toList();
+//        repository.saveAll(searchVOs);
+
         return PageResult.of(vos, pageNum, pageSize, postPage.getTotal());
     }
 
@@ -406,7 +435,6 @@ public class jPostServiceImpl implements jPostService {
 
         // 填充当前用户的操作状态
         Long currentUserId = BaseContext.getCurrentId();
-        log.info("currentUserId: " + currentUserId);
         if (currentUserId != null) {
             PostUserActionsVO userActions = new PostUserActionsVO();
             // // 暂时设置默认值，等待服务接口方法确认
@@ -419,6 +447,56 @@ public class jPostServiceImpl implements jPostService {
         }
 
         // TODO: 填充文件列表、话题等关联数据
+        // 填充文件列表、话题等关联数据
+        try {
+            // 文件：post_files -> files
+            QueryWrapper<PostFilePO> pfw = new QueryWrapper<>();
+            pfw.eq("post_id", postPO.getId()).orderByAsc("sort");
+            List<PostFilePO> relations = postFileMapper.selectList(pfw);
+            if (relations != null && !relations.isEmpty()) {
+                List<Long> fileIds = relations.stream().map(PostFilePO::getFileId).collect(Collectors.toList());
+                if (!fileIds.isEmpty()) {
+                    List<FilePO> files = fileMapper.selectBatchIds(fileIds);
+                    // 保持与关系表的顺序一致
+                    Map<Long, FilePO> fileMap = files.stream().filter(Objects::nonNull)
+                            .collect(Collectors.toMap(FilePO::getId, f -> f));
+                    List<FileSimpleVO> fileVOs = relations.stream()
+                            .map(rel -> fileMap.get(rel.getFileId()))
+                            .filter(Objects::nonNull)
+                            .map(this::convertToFileSimpleVO)
+                            .collect(Collectors.toList());
+                    postVO.setFiles(fileVOs);
+                } else {
+                    postVO.setFiles(new ArrayList<>());
+                }
+            } else {
+                postVO.setFiles(new ArrayList<>());
+            }
+        } catch (Exception ignored) {}
+
+        try {
+            // 话题：topic_posts -> topics
+            QueryWrapper<TopicPostPO> tpw = new QueryWrapper<>();
+            tpw.eq("post_id", postPO.getId());
+            List<TopicPostPO> topicRels = topicPostMapper.selectList(tpw);
+            if (topicRels != null && !topicRels.isEmpty()) {
+                List<Long> topicIds = topicRels.stream().map(TopicPostPO::getTopicId).collect(Collectors.toList());
+                if (!topicIds.isEmpty()) {
+                    List<TopicPO> topics = topicMapper.selectBatchIds(topicIds);
+                    List<TopicSimpleVO> topicVOs = topics.stream()
+                            .filter(Objects::nonNull)
+                            .map(this::convertToTopicSimpleVO)
+                            .collect(Collectors.toList());
+                    postVO.setTopics(topicVOs);
+
+                } else {
+                    postVO.setTopics(new ArrayList<>());
+                }
+            } else {
+                postVO.setTopics(new ArrayList<>());
+            }
+        } catch (Exception ignored) {}
+
 
         return postVO;
     }
@@ -450,6 +528,15 @@ public class jPostServiceImpl implements jPostService {
             postPO.setIsTop(postUpdateDTO.getIsTop());
         }
         postMapper.updateById(postPO);
+        // 更新后写入es
+        PostSearchVO postSearchVO = new PostSearchVO();
+        postSearchVO.setId(postPO.getId());
+        postSearchVO.setTitle(postPO.getTitle());
+        postSearchVO.setContent(postPO.getContent());
+        postSearchVO.setCreatedAt(postPO.getCreatedAt());
+        UserPO userPO = userMapper.selectById(postPO.getUserId());
+        postSearchVO.setUser(new PostSearchVO.UserVO(userPO.getId(), userPO.getNickname(), userPO.getAvatarUrl()));
+        repository.save(postSearchVO);
     }
 
     /** 搜索：只要 title 或 content 完全等于 keyword */
@@ -458,6 +545,59 @@ public class jPostServiceImpl implements jPostService {
                 Sort.by(Sort.Order.desc("createdAt"))); // 也可以按时间倒序
         org.springframework.data.domain.Page<PostSearchVO> pageRes = repository
                 .findByTitleContainingOrContentContaining(keyword, keyword, pageable);
+        // todo：每次新添加post都要同步到es库中去
         return new PageResult<>(pageRes.getContent(), page, size, pageRes.getTotalElements());
+    }
+
+    /** 辅助：UserVO -> UserSimpleVO */
+    private UserSimpleVO convertToUserSimpleVO(UserVO user) {
+        if (user == null) return null;
+        UserSimpleVO vo = new UserSimpleVO();
+        vo.setId(user.getId());
+        vo.setNickname(user.getNickname());
+        vo.setAvatarUrl(user.getAvatarUrl());
+        vo.setGender(user.getGender());
+        vo.setCampusId(user.getCampusId());
+        vo.setIsRealName(user.getIsRealName());
+        vo.setCreatedAt(user.getCreatedAt());
+        return vo;
+    }
+
+    /** 辅助：FilePO -> FileSimpleVO */
+    private FileSimpleVO convertToFileSimpleVO(FilePO f) {
+        if (f == null) return null;
+        FileSimpleVO vo = new FileSimpleVO();
+        vo.setId(f.getId());
+        vo.setFileUrl(f.getFileUrl());
+        vo.setThumbnailUrl(f.getThumbUrl());
+        vo.setFileSize(f.getSize() == null ? 0L : f.getSize().longValue());
+        // 基于bizType粗略推断文件类型
+        String type = "DOCUMENT";
+        if (f.getBizType() != null) {
+            switch (f.getBizType()) {
+                case AVATAR:
+                case BG:
+                case POST:
+                    type = "IMAGE";
+                    break;
+                case TASK:
+                case COMMENT:
+                    type = "DOCUMENT";
+                    break;
+            }
+        }
+        vo.setFileType(type);
+        return vo;
+    }
+
+    /** 辅助：TopicPO -> TopicSimpleVO */
+    private TopicSimpleVO convertToTopicSimpleVO(TopicPO t) {
+        if (t == null) return null;
+        TopicSimpleVO vo = new TopicSimpleVO();
+        vo.setId(t.getId());
+        vo.setName(t.getName());
+        vo.setDescription(t.getDescription());
+        vo.setPostCount(t.getPostCnt());
+        return vo;
     }
 }
