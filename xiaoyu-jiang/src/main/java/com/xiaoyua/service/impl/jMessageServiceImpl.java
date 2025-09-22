@@ -58,12 +58,8 @@ public class jMessageServiceImpl implements jMessageService {
         messagePO.setFromId(fromUserId);
         messagePO.setToId(messageDTO.getToId());
         messagePO.setContent(messageDTO.getContent());
-        messagePO.setMessageType(messageDTO.getMessageType());
-        messagePO.setStatus("SENT");
-        messagePO.setIsRead(0);
         messagePO.setCreatedAt(LocalDateTime.now());
-        messagePO.setUpdatedAt(LocalDateTime.now());
-        
+
         // 保存到数据库
         jMessageMapper.insert(messagePO);
         
@@ -78,9 +74,7 @@ public class jMessageServiceImpl implements jMessageService {
                 messagePO.getId(), 
                 fromUserId, 
                 messageDTO.getToId(), 
-                messageDTO.getContent(), 
-                messageDTO.getMessageType()
-            );
+                messageDTO.getContent());
         } catch (Exception e) {
             log.error("推送私信消息失败: messageId={}, fromUserId={}, toUserId={}, error={}", 
                     messagePO.getId(), fromUserId, messageDTO.getToId(), e.getMessage(), e);

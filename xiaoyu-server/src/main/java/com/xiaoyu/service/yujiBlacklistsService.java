@@ -10,5 +10,5 @@ public interface yujiBlacklistsService extends IService<BlacklistsPO> {
 
     void removeFromBlacklist(Long targetId);
 
-    Page<BlacklistsVO> getBlackList(Page<Object> objectPage, Long userId);
+    Page<BlacklistsVO> getBlackList(Page<BlacklistsVO> objectPage, Long userId);
 }

@@ -36,6 +36,6 @@ public class UserSelfInfoDTO {
     /** 粉丝列表可见范围 */
     private Integer privacyFans;
 
-    // 前端可多次 append("files", file)
-    private List<MultipartFile> files;
+    // 前端可多次 append("file", file)
+    private String avatarUrl;
 }

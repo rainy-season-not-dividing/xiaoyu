@@ -2,6 +2,7 @@ package com.xiaoyu.dto.task;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
 //import javax.validation.constraints.*;
@@ -27,6 +28,7 @@ public class PublishTaskDTO {
 
     /** 截止报名时间（ISO8601格式） */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")   // ← 专门给表单/URL 参数用
     private LocalDateTime expireAt;
 
     /** 文件ID数组 */
@@ -36,5 +38,5 @@ public class PublishTaskDTO {
     private List<Integer> tagIds;
 
     /** 任务图像 */
-    private List<MultipartFile> files;
+    private List<String> fileUrls;
 }

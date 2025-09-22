@@ -16,12 +16,11 @@ public interface jNotificationService {
      * 
      * @param userId 用户ID
      * @param type 通知类型
-     * @param status 阅读状态
      * @param page 页码
      * @param size 每页数量
      * @return 通知列表
      */
-    IPage<NotificationVO> getNotifications(Long userId, String type, String status, Integer page, Integer size);
+    IPage<NotificationVO> getNotifications(Long userId, String type, Integer page, Integer size);
 
     /**
      * 标记通知为已读

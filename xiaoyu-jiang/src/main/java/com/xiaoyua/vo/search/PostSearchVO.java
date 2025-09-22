@@ -1,6 +1,7 @@
 package com.xiaoyua.vo.search;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,7 @@ public class PostSearchVO {
     @Field(type = FieldType.Keyword)
     private String content;
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     private UserVO user;
 

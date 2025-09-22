@@ -31,17 +31,7 @@ public class MessageController {
     
     @Autowired
     private jMessageService jMessageService;
-    
-    @PostMapping
-    @Operation(summary = "发送私信", description = "向好友发送私信")
-    @Deprecated
-    public Result<MessageVO> sendMessage(@Valid @RequestBody MessageCreateDTO messageDTO) {
-        Long fromUserId = BaseContext.getCurrentId();
-        log.info("发送私信: fromUserId={}, toId={}, content={}", fromUserId, messageDTO.getToId(), messageDTO.getContent());
-        
-        MessageVO messageVO = jMessageService.sendMessage(fromUserId, messageDTO);
-        return Result.success(messageVO);
-    }
+
     
     @GetMapping
     @Operation(summary = "获取聊天记录", description = "获取与好友的聊天记录")

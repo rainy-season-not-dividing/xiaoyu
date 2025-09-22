@@ -1,13 +1,21 @@
 package com.xiaoyu.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 /**
  * 文件资源表
  */
 @Data
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @TableName("files")
 public class FilesPO {
 

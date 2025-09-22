@@ -28,6 +28,7 @@ public class JwtTokenAdminInterceptor_yuji implements HandlerInterceptor {
 
 
 
+    @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
         log.info("进行登录验证...");
@@ -70,5 +71,12 @@ public class JwtTokenAdminInterceptor_yuji implements HandlerInterceptor {
             response.setStatus(401);
             return false;
         }
+    }
+
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        BaseContext.clear();
+        com.xiaoyua.context.BaseContext.clearCurrentId();
     }
 }

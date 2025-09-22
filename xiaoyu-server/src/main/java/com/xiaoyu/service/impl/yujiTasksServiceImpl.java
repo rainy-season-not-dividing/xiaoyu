@@ -6,30 +6,29 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xiaoyu.constant.TaskConstant;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.task.PublishTaskDTO;
-import com.xiaoyu.entity.FavoritesPO;
-import com.xiaoyu.entity.TagItemsPO;
-import com.xiaoyu.entity.TaskFilesPO;
-import com.xiaoyu.entity.TasksPO;
+import com.xiaoyu.entity.*;
 import com.xiaoyu.mapper.yujiTasksMapper;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.service.*;
 import com.xiaoyu.vo.task.GetTasksVO;
 import com.xiaoyu.vo.task.PublishTaskVO;
 import com.xiaoyu.service.yujiFilesService;
+import com.xiaoyu.common.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.xiaoyu.exception.NotExistsException;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> implements yujiTasksService {
@@ -48,6 +47,16 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
 
     @Resource
     private yujiFilesService yujiFilesService;
+
+    @Resource
+    private yujiTaskStatsService yujiTaskStatsService;
+
+    @Resource
+    private RedisUtil redisUtil;
+
+    @Resource
+    private RedisTemplate<String ,Object> redisTemplate;
+
 
     @Override
     @Transactional
@@ -68,13 +77,18 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
         Long taskId = tasksPO.getId();
 //        List<Long> fileIds = publishTaskDTO.getFileIds();
         // 处理文件
-        List<MultipartFile> files = publishTaskDTO.getFiles();
-        List<Long> fileIds = new ArrayList<>();
-        if (files != null && !files.isEmpty()) {
-            for (MultipartFile file : files) {
-                fileIds.add((Long) yujiFilesService.uploadFile(file, "POST", currentId).get("fileId"));
-            }
-        }
+//        List<MultipartFile> files = publishTaskDTO.getFiles();
+//        List<Long> fileIds = new ArrayList<>();
+//        if (files != null && !files.isEmpty()) {
+//            for (MultipartFile file : files) {
+//                fileIds.add((Long) yujiFilesService.uploadFile(file, "POST", currentId).get("fileId"));
+//            }
+//        }
+        List<FilesPO> fileList = publishTaskDTO.getFileUrls().stream().map(
+                fileUrl -> FilesPO.builder().userId(currentId).fileUrl(fileUrl).build()
+        ).toList();
+        yujiFilesService.saveBatch(fileList);
+        List<Long> fileIds = fileList.stream().map(FilesPO::getId).toList();
         if(CollUtil.isNotEmpty(fileIds)){
             List<TaskFilesPO> taskFilesPOList = fileIds.stream()
                     .map(fileId->TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
@@ -91,7 +105,12 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
         }
         // 封装DTO类
         PublishTaskVO taskVO = BeanUtil.copyProperties(tasksPO,PublishTaskVO.class);
-        // todo: 任务评价和任务统计这里   是否   需要加上
+
+        // 添加任务统计
+        TaskStatsPO taskStatsPO = TaskStatsPO.builder().taskId(taskId).build();
+        yujiTaskStatsService.save(taskStatsPO);
+
+
         // 返回
         return taskVO;
     }
@@ -134,15 +153,22 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
     }
 
     @Override
-    public GetTasksVO getTask(Long taskId) {
-        // 封装Page
-        Long currentId = BaseContext.getId();
+    public GetTasksVO getTask(Long taskId) throws InterruptedException{
         // mysql查询，自定义sql语句
-        // todo: redis优化，减轻数据库压力
-        GetTasksVO taskInfo = yujiTasksMapper.getTask(currentId);
+//        GetTasksVO taskInfo = yujiTasksMapper.getTask(taskId);
+        List<GetTasksVO> list = redisUtil.<GetTasksVO, Long>queryWithLogicExpire(
+                TaskConstant.TASK_DETAIL_PREFIX,
+                taskId, GetTasksVO.class,
+                id-> Collections.singletonList(yujiTasksMapper.getTask(id)),
+                TaskConstant.TASK_DETAIL_EXPIRE, TimeUnit.SECONDS
+        );
+        // 修改task_stats
+        yujiTaskStatsService.lambdaUpdate().setSql("view_cnt = view_cnt + 1")
+                .eq(TaskStatsPO::getTaskId, taskId)
+                .update();
         // 返回结果
-        return taskInfo;
-
+        // todo: 如果为null 是否需要抛出异常
+        return list!=null?list.getFirst():null;
     }
 
     @Override
@@ -164,13 +190,18 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
         yujiTaskFilesService.remove(new LambdaQueryWrapper<TaskFilesPO>().eq(TaskFilesPO::getTaskId,taskId));
         // 处理文件
         Long currentId = BaseContext.getId();
-        List<MultipartFile> files = newTaskDTO.getFiles();
-        List<Long> fileIds = new ArrayList<>();
-        if (files != null && !files.isEmpty()) {
-            for (MultipartFile file : files) {
-                fileIds.add((Long) yujiFilesService.uploadFile(file, "POST", currentId).get("fileId"));
-            }
-        }
+//        List<MultipartFile> files = newTaskDTO.getFiles();
+//        List<Long> fileIds = new ArrayList<>();
+//        if (files != null && !files.isEmpty()) {
+//            for (MultipartFile file : files) {
+//                fileIds.add((Long) yujiFilesService.uploadFile(file, "POST", currentId).get("fileId"));
+//            }
+//        }
+        List<FilesPO> fileList = newTaskDTO.getFileUrls().stream().map(
+                fileUrl -> FilesPO.builder().userId(currentId).fileUrl(fileUrl).build()
+        ).toList();
+        yujiFilesService.saveBatch(fileList);
+        List<Long> fileIds = fileList.stream().map(FilesPO::getId).toList();
         List<TaskFilesPO> taskFilesPOList = fileIds.stream()
                 .map(fileId -> TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
                 .toList();
@@ -180,6 +211,10 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
                 .map(tagId -> TagItemsPO.builder().itemId(taskId).tagId(tagId).build())
                 .toList();
         yujiTagItemsService.saveBatch(tagItemsPOList);
+
+        // 删除缓存
+        redisTemplate.delete(TaskConstant.TASK_DETAIL_PREFIX+taskId);
+
         return Collections.singletonMap("updated_at", tasksPO.getUpdatedAt());
     }
 
@@ -195,6 +230,10 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
         // 3、删除任务
         removeById(taskId);
         // todo: 删除任务后，是否要删除 task_order, task_reviews , task_stats 表中对应的记录呢
+
+
+        // 删除缓存：
+        redisTemplate.delete(TaskConstant.TASK_DETAIL_PREFIX+taskId);
     }
 
     @Override

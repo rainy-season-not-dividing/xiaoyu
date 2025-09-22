@@ -20,7 +20,8 @@ public class PostForm {
     private BigDecimal poiLat;
     private BigDecimal poiLng;
     private String poiName;
+    private List<Long> topicIds;
 
     // 前端可多次 append("files", file)
-    private List<MultipartFile> files;
+    private List<String> files;
 }

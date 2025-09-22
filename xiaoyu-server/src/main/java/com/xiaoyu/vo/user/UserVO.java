@@ -2,6 +2,8 @@ package com.xiaoyu.vo.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -21,8 +23,8 @@ public class UserVO {
     private String avatarUrl;
 
     /** 生日 */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime birthday;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthday;
 
     private String mobile;
 

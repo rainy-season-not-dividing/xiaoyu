@@ -12,5 +12,5 @@ public interface yujiTasksMapper extends BaseMapper<TasksPO> {
 
     Page<GetTasksVO> getReceivedTasks(Page<GetTasksVO> pageSet, Long userId);
 
-    GetTasksVO getTask(Long currentId);
+    GetTasksVO getTask(Long taskId);
 }

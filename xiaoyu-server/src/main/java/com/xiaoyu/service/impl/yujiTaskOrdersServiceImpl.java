@@ -43,6 +43,9 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
         }
         // 1、获取用户id
         Long currentId = BaseContext.getId();
+        if(currentId.equals(tasksPO.getPublisherId())){
+            throw new BadRequestException("不能自己接自己发布的任务");
+        }
         // 2、封装实体类
         TaskOrdersPO orderPO = TaskOrdersPO.builder()
                 .taskId(taskId)

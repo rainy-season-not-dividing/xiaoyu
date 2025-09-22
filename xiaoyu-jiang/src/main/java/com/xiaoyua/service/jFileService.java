@@ -1,5 +1,7 @@
 package com.xiaoyua.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.xiaoyua.entity.FilePO;
 import com.xiaoyua.vo.file.FileVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -8,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
  * 
  * @author xiaoyu
  */
-public interface jFileService {
+public interface jFileService extends IService<FilePO> {
     
     /**
      * 上传文件

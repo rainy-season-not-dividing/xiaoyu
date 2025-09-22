@@ -13,11 +13,16 @@ import com.xiaoyu.service.yujiBlacklistsService;
 import com.xiaoyu.service.yujiUserService;
 import com.xiaoyu.vo.user.BlacklistsVO;
 import com.xiaoyu.vo.user.UserVO;
+import com.xiaoyu.common.utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import com.xiaoyu.constant.UserConstant;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @RestController
@@ -31,21 +36,38 @@ public class UserController {
     @Resource
     private yujiBlacklistsService yujiBlacklistsService;
 
-    @GetMapping
-    public Result<UserVO> getUserPublicInfo(@PathVariable Long userId){
+    @Resource
+    private RedisUtil redisUtil;
+
+    @GetMapping("/{userId}")
+    public Result<UserVO> getUserPublicInfo(@PathVariable Long userId) throws InterruptedException{
         log.info("获取用户的公开信息：{}",userId);
-        return Result.success(yujiUserService.getUserPublicInfo(userId));
+        List<UserVO> list = redisUtil.<UserVO, Long>queryWithLogicExpire(
+                UserConstant.USER_PUBLIC_INFO_PREFIX,
+                userId, UserVO.class,
+                id-> Collections.singletonList(yujiUserService.getUserPublicInfo(id)),
+                UserConstant.USER_PUBLIC_INFO_TIMEOUT, TimeUnit.SECONDS
+        );
+        return Result.success(list!=null?list.getFirst():null);
+//        return Result.success(yujiUserService.getUserPublicInfo(userId));
     }
 
     @GetMapping("/me")
-    public Result<UsersPO> getUserSelfInfo(){
+    public Result<UsersPO> getUserSelfInfo() throws InterruptedException{
         log.info("获取当前用户的信息");
-        return Result.success(yujiUserService.getUserSelfInfo(BaseContext.getId()));
+        Long currentId = BaseContext.getId();
+        List<UsersPO> list = redisUtil.<UsersPO, Long>queryWithLogicExpire(
+                UserConstant.USER_SELF_INFO_PREFIX,
+                currentId, UsersPO.class,
+                id-> Collections.singletonList(yujiUserService.getUserSelfInfo(id)),
+                UserConstant.USER_SELF_INFO_TIMEOUT, TimeUnit.SECONDS
+                );
+        return Result.success(list!=null?list.getFirst():null);
     }
 
 
     @PutMapping(value="/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Result updateUserInfo(@ModelAttribute UserSelfInfoDTO userSelfInfoDTO){
+    public Result updateUserInfo(@RequestBody UserSelfInfoDTO userSelfInfoDTO){
         log.info("更新当前用户信息：{}",userSelfInfoDTO);
         yujiUserService.updateUserInfo(userSelfInfoDTO);
         return Result.success("更新成功");
@@ -73,7 +95,7 @@ public class UserController {
         return Result.success("拉黑成功");
     }
 
-    @DeleteMapping("/blacklist/{target_id}")
+    @DeleteMapping("/blacklist/{targetId}")
     public Result removeFromBlacklist(@PathVariable Long targetId){
         log.info("将用户移出黑名单：{}",targetId);
         yujiBlacklistsService.removeFromBlacklist(targetId);
@@ -81,7 +103,9 @@ public class UserController {
     }
 
     @GetMapping("/blacklist")
-    public Result<PageResult<BlacklistsVO>> getBlacklist(@RequestParam(required=false,defaultValue = "1") Integer page, @RequestParam(required=false,defaultValue = "20") Integer size){
+    public Result<PageResult<BlacklistsVO>> getBlacklist(
+            @RequestParam(required=false,defaultValue = "1") Integer page,
+            @RequestParam(required=false,defaultValue = "20") Integer size){
         log.info("获取黑名单列表：{}",page);
         return Result.success(yujiUserService.getBlacklist(page,size));
     }

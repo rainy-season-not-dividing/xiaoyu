@@ -17,7 +17,7 @@ public class PageResult<T> {
         this.pagination.page = page;
         this.pagination.size = size;
         this.pagination.total = total;
-        this.pagination.pages = (long) total / size;
+        this.pagination.pages = (long) Math.ceil((double) total / size);
     }
 
 

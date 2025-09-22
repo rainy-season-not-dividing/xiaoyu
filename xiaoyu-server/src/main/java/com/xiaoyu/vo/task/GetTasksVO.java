@@ -1,5 +1,6 @@
 package com.xiaoyu.vo.task;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -34,9 +35,11 @@ public class GetTasksVO {
     private String visibility;
 
     /** 报名截止（ISO8601） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expireAt;
 
     /** 创建时间（ISO8601） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     /** 任务文件列表 */

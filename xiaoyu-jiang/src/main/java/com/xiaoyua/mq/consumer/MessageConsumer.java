@@ -106,13 +106,12 @@ public class MessageConsumer {
     private void pushToWebSocket(PrivateMessage message) {
         try {
             Map<String, Object> wsMessage = Map.of(
-                "type", "private_message",
+                "type", "CHAT",
                 "message_id", message.getOriginalMessageId(),
                 "from_user_id", message.getFromUserId(),
                 "from_user_nickname", message.getFromUserNickname() != null ? message.getFromUserNickname() : "",
                 "from_user_avatar", message.getFromUserAvatar() != null ? message.getFromUserAvatar() : "",
                 "content", message.getContent(),
-                "message_type", message.getMessageType(),
                 "created_at", message.getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
                 "timestamp", System.currentTimeMillis()
             );

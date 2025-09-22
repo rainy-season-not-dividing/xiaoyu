@@ -116,7 +116,7 @@ public class NotificationConsumer {
     private void pushToWebSocket(NotificationMessage message, Long notificationId) {
         try {
             Map<String, Object> wsMessage = new HashMap<>();
-            wsMessage.put("type", "notification");
+            wsMessage.put("type", "INTERACTION");
             wsMessage.put("id", notificationId);
             wsMessage.put("notification_type", message.getType());
             wsMessage.put("title", message.getTitle());

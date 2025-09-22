@@ -69,4 +69,11 @@ public interface jPostService {
      * @return
      */
     PageResult<PostSearchVO> searchExact(String keyword, Integer page, Integer size);
+
+    /**
+     * 删除动态
+     *
+     * @param postId
+     */
+    void deletePost(Long postId);
 }

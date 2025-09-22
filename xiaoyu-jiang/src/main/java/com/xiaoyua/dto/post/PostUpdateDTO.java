@@ -3,6 +3,8 @@ package com.xiaoyua.dto.post;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 更新动态请求DTO
  * 用于接收动态更新请求数据
@@ -42,6 +44,8 @@ public class PostUpdateDTO {
     @Min(value = 0, message = "置顶设置值不正确")
     @Max(value = 1, message = "置顶设置值不正确")
     private Integer isTop;
+
+    private List<String> files;
     
 //    public PostUpdateDTO() {}
 //

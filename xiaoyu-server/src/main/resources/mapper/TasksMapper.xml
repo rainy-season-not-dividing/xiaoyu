@@ -60,8 +60,8 @@
         u.nickname    AS pub_nickname,
         u.avatar_url  AS pub_avatar,
 
-        s.view_cnt,
-        s.order_cnt,
+        MAX(s.view_cnt)  AS view_cnt,   <!-- 聚合 -->
+        MAX(s.order_cnt) AS order_cnt,  <!-- 聚合 -->
 
         f.id          AS file_id,
         f.thumb_url,
@@ -157,8 +157,8 @@
         tg.name       AS tag_name
 
         FROM tasks t
-        INNER JOIN task_orders o ON o.task_id = t.id
-        INNER JOIN users u ON u.id = o.receiver_id
+        INNER JOIN users u ON u.id = t.publisher_id
+        LEFT JOIN task_orders o ON o.task_id = t.id
         LEFT JOIN task_stats s ON s.task_id = t.id
         LEFT JOIN task_files tf ON tf.task_id = t.id
         LEFT JOIN files f ON f.id = tf.file_id
@@ -166,10 +166,10 @@
         LEFT JOIN tags tg ON tg.id = ti.tag_id
 
         <where>
-            <if test="userId != null">AND o.receiver_id=#{userId}</if>
+            t.id = #{taskId}
         </where>
 
-        GROUP BY t.id, u.id, s.view_cnt, s.order_cnt, f.id, tg.id   -- 3. 全列 GROUP BY
+        GROUP BY t.id, u.id, s.view_cnt, s.order_cnt, f.id, tg.id, t.created_at
         ORDER BY t.created_at DESC, t.id DESC
     </select>
 

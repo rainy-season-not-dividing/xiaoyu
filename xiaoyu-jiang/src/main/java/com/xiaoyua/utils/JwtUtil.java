@@ -23,7 +23,7 @@ public class JwtUtil {
     @Value("${jwt.secret:xiaoyu-secret-key-for-jwt-token-generation}")
     private String secret;
     
-    @Value("${jwt.expiration:7200}")
+    @Value("${jwt.expiration:720000}")
     private Long expiration;
     
     private SecretKey getSigningKey() {

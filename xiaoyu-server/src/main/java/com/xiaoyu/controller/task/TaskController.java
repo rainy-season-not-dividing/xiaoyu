@@ -23,7 +23,7 @@ public class TaskController {
     private yujiTasksService yujiTasksService;
 
     @PostMapping
-    public Result<PublishTaskVO> publishTask(@ModelAttribute PublishTaskDTO publishTaskDTO){
+    public Result<PublishTaskVO> publishTask(@RequestBody PublishTaskDTO publishTaskDTO){
         log.info("发布任务：{}",publishTaskDTO);
         return Result.success(yujiTasksService.publishTask(publishTaskDTO));
     }
@@ -36,6 +36,7 @@ public class TaskController {
             @RequestParam(required=false) String keyword,   // 关键字，关键字搜索，标题或内容
             @RequestParam(required=false) Integer tagId     // 标签ID
             ){
+        // todo: 返回的任务中不能有”审核中“的状态
         log.info("获取任务列表");
         return Result.success(yujiTasksService.getTasks(page,size,status,keyword,tagId));
     }
@@ -58,34 +59,34 @@ public class TaskController {
         return Result.success(yujiTasksService.getMyReceivedTasks(page,size));
     }
 
-    @GetMapping("/{task_id}")
-    public Result<GetTasksVO> getTask(@PathVariable Long taskId){
+    @GetMapping("/{taskId}")
+    public Result<GetTasksVO> getTask(@PathVariable Long taskId) throws InterruptedException{
         log.info("获取任务详情：{}",taskId);
         return Result.success(yujiTasksService.getTask(taskId));
     }
 
 
-    @PutMapping("/{task_id}")
+    @PutMapping("/{taskId}")
     public Result<Map<String,Object>> updateTask(@PathVariable Long taskId, @ModelAttribute PublishTaskDTO newTaskDTO){
         log.info("更新任务：{}",taskId);
         return Result.success(yujiTasksService.updateTask(taskId,newTaskDTO));
     }
 
-    @DeleteMapping("/{task_id}")
+    @DeleteMapping("/{taskId}")
     public Result deleteTask(@PathVariable Long taskId){
         log.info("删除任务：{}",taskId);
         yujiTasksService.removeTask(taskId);
         return Result.success("任务删除成功");
     }
 
-    @PostMapping("/{task_id}/favorite")
+    @PostMapping("/{taskId}/favorite")
     public Result favoriteTask(@PathVariable Long taskId){
         log.info("收藏任务：{}",taskId);
         yujiTasksService.favoriteTask(taskId);
         return Result.success("收藏成功");
     }
 
-    @DeleteMapping("/{task_id}/favorite")
+    @DeleteMapping("/{taskId}/favorite")
     public Result removeFavoriteTask(@PathVariable Long taskId){
         log.info("取消收藏任务：{}",taskId);
         yujiTasksService.removeFavoriteTask(taskId);

@@ -124,7 +124,7 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
 
     @Override
     public PageResult<FriendlistVO> getFriendlist(Integer page, Integer pageSize, FriendshipsPO.Status status) {
-        // todo:前端协调 "，accepted：不要分页查询   pending： 分页查询"
+        // 前端协调 "，accepted：不要分页查询   pending： 分页查询"
         // userID
         Long userId = BaseContext.getId();
         log.info("当前的userId:{}",userId);

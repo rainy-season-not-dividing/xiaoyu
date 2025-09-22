@@ -1,5 +1,6 @@
 package com.xiaoyua.vo.task;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.xiaoyua.vo.file.FileSimpleVO;
 import com.xiaoyua.vo.tag.TagSimpleVO;
 import com.xiaoyua.vo.user.UserSimpleVO;
@@ -67,11 +68,13 @@ public class TaskVO {
     /**
      * 截止时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expireAt;
 
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     /**

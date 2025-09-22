@@ -34,14 +34,14 @@ public class FriendController {
         return Result.success("好友请求已发送");
     }
 
-    @PutMapping("/{friend_id}/accept")
+    @PutMapping("/{friendId}/accept")
     public Result acceptFriendRequest(@PathVariable("friend_id") Long friendId) {
         log.info("接受好友请求：{}",friendId);
         yujiFriendShipsService.acceptFriendRequest(friendId);
         return Result.success("已成为好友");
     }
 
-    @PutMapping("/{friend_id}/refuse")
+    @PutMapping("/{friendId}/refuse")
     public Result refuseFriendRequest(@PathVariable("friend_id") Long friendId) {
         log.info("拒绝好友请求：{}",friendId);
         yujiFriendShipsService.refuseFriendRequest(friendId);
@@ -49,7 +49,7 @@ public class FriendController {
     }
 
 
-    @DeleteMapping("/{friend_id}")
+    @DeleteMapping("/{friendId}")
     public Result deleteFriend(@PathVariable("friend_id") Long friendId) {
         log.info("删除好友：{}",friendId);
         yujiFriendShipsService.deleteFriendships(friendId);

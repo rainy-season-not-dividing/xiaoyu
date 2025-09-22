@@ -1,9 +1,12 @@
 package com.xiaoyua.controller.dynamic;
 
+import com.xiaoyu.common.utils.RedisUtil;
+import com.xiaoyua.common.constant.PostConstant;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.post.PostCreateDTO;
 import com.xiaoyua.dto.post.PostForm;
 import com.xiaoyua.dto.post.PostUpdateDTO;
+import com.xiaoyua.entity.FilePO;
 import com.xiaoyua.service.jPostService;
 import com.xiaoyua.service.jLikeService;
 import com.xiaoyua.service.jFavService;
@@ -11,16 +14,16 @@ import com.xiaoyua.service.jShareService;
 import com.xiaoyua.service.jFileService;
 import com.xiaoyua.vo.post.PostVO;
 import com.xiaoyua.result.Result;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import com.xiaoyua.common.enums.TargetType;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,15 +54,19 @@ public class PostController {
     @Autowired
     private jFileService jFileService;
 
+    @Resource
+    private RedisUtil redisUtil;
+
+    @Resource
+    private RedisTemplate<String , Object> redisTemplate;
+
+
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "发布动态（@ModelAttribute 混合表单：表单字段 + files）")
-    public Result<PostVO> createPost(@Valid @ModelAttribute PostForm form) {
+    public Result<PostVO> createPost(@RequestBody PostForm form) {
+        log.info("createPost,{form}",form);
         Long userId = BaseContext.getCurrentId();
-        log.info("createPost title={}, content={}, campusId={}, visibility={}, poiLat={}, poiLng={}, poiName={}",
-                form.getTitle(), form.getContent()
-        );
-        log.info("这里的userId: {}",userId);
         // 将表单映射到 DTO
         PostCreateDTO dto = new PostCreateDTO();
         dto.setTitle(form.getTitle());
@@ -71,18 +78,26 @@ public class PostController {
         dto.setPoiName(form.getPoiName());
 
         // 处理文件
-        List<MultipartFile> files = form.getFiles();
-        if (files != null && !files.isEmpty()) {
-            List<Long> fileIds = new ArrayList<>();
-            for (MultipartFile file : files) {
-                log.info("这里的userId: {}",userId);
-                var fileVO = jFileService.uploadFile(file, "POST", userId);
-                if (fileVO != null && fileVO.getId() != null) {
-                    fileIds.add(fileVO.getId());
-                }
-            }
-            dto.setFileIds(fileIds);
-        }
+//        List<MultipartFile> files = form.getFiles();
+//        if (files != null && !files.isEmpty()) {
+//            List<Long> fileIds = new ArrayList<>();
+//            for (MultipartFile file : files) {
+//                log.info("这里的userId: {}",userId);
+//                var fileVO = jFileService.uploadFile(file, "POST", userId);
+//                if (fileVO != null && fileVO.getId() != null) {
+//                    fileIds.add(fileVO.getId());
+//                }
+//            }
+//            dto.setFileIds(fileIds);
+//        }
+        Long currentId = BaseContext.getCurrentId();
+        List<FilePO> fileList = form.getFiles().stream().map(
+                fileUrl -> FilePO.builder().userId(currentId).fileUrl(fileUrl).build()
+        ).toList();
+        jFileService.saveBatch(fileList);
+        List<Long> fileIds = fileList.stream().map(FilePO::getId).toList();
+        dto.setFileIds(fileIds);
+
 
         PostVO postVO = jPostService.createPost(dto, userId);
         return Result.success("发布成功", postVO);
@@ -141,9 +156,16 @@ public class PostController {
 
     @GetMapping("/hot")
     @Operation(summary = "获取热门动态（按浏览数倒序，默认前10条）")
-    public Result<List<PostVO>> getHotPosts(@RequestParam(value = "limit", required = false) Integer limit) {
+    public Result<List<PostVO>> getHotPosts(@RequestParam(value = "limit", required = false) Integer limit) throws InterruptedException{
         log.info("listHot limit={}", limit);
-        var list = jPostService.listHot(limit);
+//        var list = jPostService.listHot(limit);
+
+        List<PostVO> list = redisUtil.<PostVO, Integer>queryWithLogicExpire(
+                PostConstant.POST_HOT_KEY_PREFIX,
+                limit, PostVO.class,
+                id->jPostService.listHot(id),
+                PostConstant.POST_HOT_TIMEOUT, TimeUnit.SECONDS
+        );
         return Result.success("success", list);
     }
 
@@ -179,11 +201,19 @@ public class PostController {
         
         try {
             // 调用服务层获取动态详情
-            PostVO postVO = jPostService.getPostDetail(postId);
-            return Result.success("获取成功", postVO);
+//            PostVO postVO = jPostService.getPostDetail(postId);
+            List<PostVO> list = redisUtil.<PostVO, Long>queryWithLogicExpire(
+                    PostConstant.POST_DETAIL_KEY_PREFIX,
+                    postId, PostVO.class,
+                    id-> Collections.singletonList(jPostService.getPostDetail(id)),
+                    PostConstant.POST_DETAIL_TIMEOUT, TimeUnit.SECONDS
+            );
+            return Result.success("获取成功", list!=null?list.getFirst():null);
         } catch (RuntimeException e) {
             log.warn("获取动态详情失败: postId={}, error={}", postId, e.getMessage());
             return Result.error(e.getMessage());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -195,7 +225,27 @@ public class PostController {
         return Result.success("更新成功");
     }
 
+    @DeleteMapping("/{post_id}")
+    @Operation(summary = "删除动态")
+    public Result deletePost(@PathVariable("post_id") Long postId) {
+        log.info("deletePost postId={}", postId);
+        jPostService.deletePost(postId);
+        return Result.success("删除成功");
+    }
 
+
+    void clearCache(String pattern){
+        log.info("清理缓存：{}",pattern);
+        Set keys = redisTemplate.keys(pattern);
+        redisTemplate.delete(keys);
+        log.info("清理完成");
+    }
+
+    @Scheduled(cron = "0 0 * * * ?")
+    void clearCache(){
+        log.info("定时任务调度, 更新热门动态");
+        clearCache(PostConstant.POST_HOT_KEY_PREFIX+"::*");
+    }
 
 
 }

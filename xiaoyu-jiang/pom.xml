@@ -7,6 +7,8 @@
 		<artifactId>xiaoyu</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
+
+
 	<groupId>com.xiaoyu.jiang</groupId>
 	<artifactId>xiaoyu-server-jiang</artifactId>
 	<name>xiaoyu-jiang</name>
@@ -15,6 +17,12 @@
 
 
 	<dependencies>
+
+		<dependency>
+			<groupId>com.xiaoyu.server</groupId>
+			<artifactId>xiaoyu-common</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

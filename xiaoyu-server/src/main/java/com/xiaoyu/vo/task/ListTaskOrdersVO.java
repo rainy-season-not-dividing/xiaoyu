@@ -1,6 +1,7 @@
 package com.xiaoyu.vo.task;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -16,8 +17,10 @@ public class ListTaskOrdersVO {
 
     private String status;          // 订单状态
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt; // 创建时间
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt; // 更新时间
 
     /**

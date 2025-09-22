@@ -28,7 +28,7 @@ spring:
       verification-mode: none   # 开发环境
   rabbitmq:
     # RabbitMQ公共配置（与参考项目一致，确保连接兼容性）
-    host: 192.168.88.133
+    host: 192.168.88.135
     port: 5672
     username: admin
     password: admin

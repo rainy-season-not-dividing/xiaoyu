@@ -18,7 +18,7 @@ public interface yujiTasksService extends IService<TasksPO> {
 
     PageResult<GetTasksVO> getMyReceivedTasks(Integer page, Integer size);
 
-    GetTasksVO getTask(Long taskId);
+    GetTasksVO getTask(Long taskId) throws InterruptedException;
 
     Map<String, Object> updateTask(Long taskId, PublishTaskDTO newTaskDTO);
 

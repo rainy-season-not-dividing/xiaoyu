@@ -21,37 +21,37 @@ public class TaskOrderController {
     @Resource
     private yujiTaskOrdersService yujiTaskOrdersService;
 
-    @PostMapping("/{task_id}")
+    @PostMapping("/{taskId}")
     public Result<TaskOrdersVO> createTaskOrder(@PathVariable Long taskId){
         log.info("创建任务订单：{}",taskId);
         return Result.success("接单请求已发送", yujiTaskOrdersService.createTaskOrder(taskId));
     }
 
-    @PutMapping("/{order_id}/accept")
+    @PutMapping("/{orderId}/accept")
     public Result<TaskOrdersVO> acceptTaskOrder(@PathVariable Long taskOrderId){
         log.info("接受任务订单：{}",taskOrderId);
         return Result.success("已接收接单请求", yujiTaskOrdersService.acceptTaskOrder(taskOrderId));
     }
 
-    @PutMapping("/{order_id}/refuse")
+    @PutMapping("/{orderId}/refuse")
     public Result<TaskOrdersVO> refuseTaskOrder(@PathVariable Long orderId){
         log.info("拒绝任务订单：{}",orderId);
         return Result.success("已拒绝接单请求", yujiTaskOrdersService.refuseTaskOrder(orderId));
     }
 
-    @PutMapping("/{order_id}/cancel")
+    @PutMapping("/{orderId}/cancel")
     public Result<TaskOrdersVO> cancelTaskOrder(@PathVariable Long orderId){
         log.info("取消任务订单：{}",orderId);
         return Result.success("已取消任务订单", yujiTaskOrdersService.cancelTaskOrder(orderId));
     }
 
-    @PutMapping("/{order_id}/finish")
+    @PutMapping("/{orderId}/finish")
     public Result<TaskOrdersVO> finishTaskOrder(@PathVariable Long orderId){
         log.info("完成任务订单：{}",orderId);
         return Result.success("已完成任务订单", yujiTaskOrdersService.finishTaskOrder(orderId));
     }
 
-    @PutMapping("/{order_id}/confirm-finish")
+    @PutMapping("/{orderId}/confirm-finish")
     public Result<TaskOrdersVO> confirmFinishTaskOrder(@PathVariable Long orderId){
         log.info("确认完成任务订单：{}",orderId);
         return Result.success("已确认完成任务订单", yujiTaskOrdersService.confirmFinishTaskOrder(orderId));

@@ -35,16 +35,20 @@ public class yujiFriendMessagesServiceImpl extends ServiceImpl<yujiFriendMessage
 
     @Override
     public PageResult<FriendMessagesPO> getMessages(Integer page, Integer size, Long friendId) {
-        // todo: 这里是否需要验证身份
         // 获取当前用户
         Long userId = BaseContext.getId();
         // 设置page信息
         Page<FriendMessagesPO> pageSet = new Page<>(page,size);
         // 获取消息列表
-        Page<FriendMessagesPO> pageInfo = this.page(pageSet, new LambdaQueryWrapper<>(FriendMessagesPO.class)
-                .eq(FriendMessagesPO::getFromId,friendId)
-                .eq(FriendMessagesPO::getToId,userId)
-                .orderByDesc(FriendMessagesPO::getCreatedAt));
+        Page<FriendMessagesPO> pageInfo = this.page(
+                pageSet,
+                new LambdaQueryWrapper<FriendMessagesPO>()
+                        .eq(FriendMessagesPO::getFromId, friendId)
+                        .eq(FriendMessagesPO::getToId, userId)
+                        .or(qw -> qw.eq(FriendMessagesPO::getFromId, userId)
+                                .eq(FriendMessagesPO::getToId, friendId))
+                        .orderByDesc(FriendMessagesPO::getCreatedAt)
+        );
         // 封装返回
         return new PageResult<>(pageInfo.getRecords(),page,size,pageInfo.getTotal());
     }

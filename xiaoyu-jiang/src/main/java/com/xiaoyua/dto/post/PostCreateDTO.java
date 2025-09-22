@@ -97,16 +97,12 @@ public class PostCreateDTO {
      * 文件ID列表
      */
     private List<Long> fileIds;
-    
-    /**
-     * 话题名称列表
-     */
-    private List<String> topicNames;
+
     
     /**
      * 标签ID列表
      */
-    private List<Integer> tagIds;
+    private List<Long> topicIds;
     
 //    public PostCreateDTO() {}
 //

@@ -1,5 +1,6 @@
 package com.xiaoyua.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyua.entity.FilePO;
 import com.xiaoyua.mapper.jFileMapper;
 import com.xiaoyua.service.jFileService;
@@ -21,7 +22,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class jFileServiceImpl implements jFileService {
+public class jFileServiceImpl extends ServiceImpl<jFileMapper, FilePO> implements jFileService {
     
     private final jFileMapper jFileMapper;
     

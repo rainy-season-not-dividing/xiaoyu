@@ -1,6 +1,7 @@
 package com.xiaoyu.vo.friend;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.xiaoyu.entity.FriendshipsPO;
 import lombok.Data;
 
@@ -30,6 +31,7 @@ public class FriendlistVO {
     /**
      * 加好友时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     /**

@@ -103,7 +103,6 @@ public class jOfflineMessageServiceImpl implements jOfflineMessageService {
             content.put("from_user_nickname", message.getFromUserNickname());
             content.put("from_user_avatar", message.getFromUserAvatar());
             content.put("content", message.getContent());
-            content.put("message_type", message.getMessageType());
             content.put("created_at", message.getCreatedAt().toString());
             
             offlineMessage.setMessageContent(objectMapper.writeValueAsString(content));

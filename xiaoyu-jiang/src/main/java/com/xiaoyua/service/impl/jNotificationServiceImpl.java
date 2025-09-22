@@ -35,8 +35,8 @@ public class jNotificationServiceImpl implements jNotificationService {
     private jUserMapper jUserMapper;
 
     @Override
-    public IPage<NotificationVO> getNotifications(Long userId, String type, String status, Integer page, Integer size) {
-        log.info("获取通知列表: userId={}, type={}, status={}, page={}, size={}", userId, type, status, page, size);
+    public IPage<NotificationVO> getNotifications(Long userId, String type , Integer page, Integer size) {
+        log.info("获取通知列表: userId={}, type={},page={}, size={}", userId, type, page, size);
         
         // 构建查询条件
         QueryWrapper<NotificationPO> queryWrapper = new QueryWrapper<>();
@@ -51,17 +51,6 @@ public class jNotificationServiceImpl implements jNotificationService {
                 log.warn("忽略非法通知类型筛选: {}", type);
             }
         }
-        
-        // 按状态筛选
-        if (StringUtils.hasText(status)) {
-            try {
-                NotificationPO.Status s = NotificationPO.Status.valueOf(status.trim().toUpperCase(Locale.ROOT));
-                queryWrapper.eq("status", s);
-            } catch (IllegalArgumentException ex) {
-                log.warn("忽略非法通知状态筛选: {}", status);
-            }
-        }
-        
         // 按创建时间倒序排列
         queryWrapper.orderByDesc("created_at");
         

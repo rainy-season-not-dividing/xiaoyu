@@ -64,7 +64,6 @@ public class AliOssUtil {
                 .append(objectName);
 
         log.info("文件上传到:{}", stringBuilder.toString());
-        // todo：不知道为什么，上传图片后，页面上不会呈现，感觉应该是访问图片的url有误
 
         return stringBuilder.toString();
     }

@@ -2,6 +2,8 @@ package com.xiaoyua.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -23,7 +25,7 @@ public class UserPO {
     private String avatarUrl;
 
     /** 生日 */
-    private LocalDateTime birthday;
+    private LocalDate birthday;
 
     /** 性别：0未知 1男 2女 */
     private Integer gender;

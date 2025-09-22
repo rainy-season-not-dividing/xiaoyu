@@ -38,7 +38,7 @@ public class yujiBlacklistsServiceImpl extends ServiceImpl<yujiBlacklistsMapper,
     }
 
     @Override
-    public Page<BlacklistsVO> getBlackList(Page<Object> objectPage, Long userId) {
+    public Page<BlacklistsVO> getBlackList(Page<BlacklistsVO> objectPage, Long userId) {
         return yujiBlacklistsMapper.getBlackList(objectPage,userId);
     }
 

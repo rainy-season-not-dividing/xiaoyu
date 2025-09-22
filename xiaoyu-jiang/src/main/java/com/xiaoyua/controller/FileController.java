@@ -3,16 +3,21 @@ package com.xiaoyua.controller;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.result.Result;
 import com.xiaoyua.service.jFileService;
+import com.xiaoyua.utils.OssUtil;
 import com.xiaoyua.vo.file.FileVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.UUID;
 
 /**
  * 文件上传控制器
@@ -21,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @RestController
 @RequestMapping("/files")
+@RequiredArgsConstructor
 @Slf4j
 @Tag(name = "文件管理", description = "文件上传、下载、删除等操作")
 public class FileController {
@@ -28,26 +34,52 @@ public class FileController {
     @Autowired
     private jFileService jFileService;
 
+    private final OssUtil ossUtil;
+
+
+
+//    @PostMapping("/upload")
+//    @Operation(summary = "上传文件", description = "上传文件至OSS，并记录文件信息")
+//    public Result<FileVO> upload(
+//            @Parameter(description = "要上传的文件", required = true)
+//            @RequestParam("file") MultipartFile file,
+//
+//            @Parameter(description = "业务类型：AVATAR/BG/POST/TASK/COMMENT", required = true)
+//            @RequestParam("biz_type")
+//            @NotBlank(message = "业务类型不能为空")
+//            @Pattern(regexp = "^(AVATAR|BG|POST|TASK|COMMENT)$", message = "业务类型必须是：AVATAR/BG/POST/TASK/COMMENT")
+//            String bizType) {
+//
+//        log.info("开始上传文件，业务类型: {}, 文件名: {}", bizType, file.getOriginalFilename());
+//
+//        // TODO: 从JWT token中获取用户ID，这里暂时使用固定值
+//        Long userId = BaseContext.getCurrentId();
+//
+//        FileVO fileVO = jFileService.uploadFile(file, bizType, userId);
+//
+//        return Result.success("上传成功", fileVO);
+//    }
+
     @PostMapping("/upload")
     @Operation(summary = "上传文件", description = "上传文件至OSS，并记录文件信息")
-    public Result<FileVO> upload(
-            @Parameter(description = "要上传的文件", required = true)
-            @RequestParam("file") MultipartFile file,
-            
-            @Parameter(description = "业务类型：AVATAR/BG/POST/TASK/COMMENT", required = true)
-            @RequestParam("biz_type") 
-            @NotBlank(message = "业务类型不能为空")
-            @Pattern(regexp = "^(AVATAR|BG|POST|TASK|COMMENT)$", message = "业务类型必须是：AVATAR/BG/POST/TASK/COMMENT")
-            String bizType) {
-        
-        log.info("开始上传文件，业务类型: {}, 文件名: {}", bizType, file.getOriginalFilename());
-        
-        // TODO: 从JWT token中获取用户ID，这里暂时使用固定值
-        Long userId = BaseContext.getCurrentId();
-        
-        FileVO fileVO = jFileService.uploadFile(file, bizType, userId);
-        
-        return Result.success("上传成功", fileVO);
+    public Result<String> upload(@RequestBody MultipartFile file){
+        log.info("文件上传：{}", file);
+
+        try {
+            // 原始文件名
+            String originalFilename = file.getOriginalFilename();
+            //截取原始文件名的后缀   dfdfdf.png
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            // 构建新文件的名称
+            String objectName = UUID.randomUUID().toString() + extension;
+
+            //文件请求路径
+            String  fileUrl = ossUtil.upload(file.getBytes(), file.getOriginalFilename());
+            return Result.success("上传成功",fileUrl);
+        } catch (IOException e) {
+            log.error("文件上传失败：{}", e);
+        }
+        return null;
     }
     
     @GetMapping("/{fileId}")

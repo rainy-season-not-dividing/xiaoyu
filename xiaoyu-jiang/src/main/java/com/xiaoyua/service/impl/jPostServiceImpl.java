@@ -1,8 +1,10 @@
 package com.xiaoyua.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xiaoyua.common.constant.PostConstant;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.post.PostCreateDTO;
 import com.xiaoyua.dto.post.PostQueryDTO;
@@ -10,10 +12,7 @@ import com.xiaoyua.dto.post.PostUpdateDTO;
 import com.xiaoyua.entity.*;
 import com.xiaoyua.mapper.*;
 import com.xiaoyua.es.yujiPostSearchRepository;
-import com.xiaoyua.service.jLikeService;
-import com.xiaoyua.service.jPostService;
-import com.xiaoyua.service.jFavService;
-import com.xiaoyua.service.jMessageService;
+import com.xiaoyua.service.*;
 import com.xiaoyua.vo.file.FileSimpleVO;
 import com.xiaoyua.vo.post.PostVO;
 import com.xiaoyua.vo.post.PostStatsVO;
@@ -30,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +63,9 @@ public class jPostServiceImpl implements jPostService {
     private final jFileMapper fileMapper;
     private final jTopicPostMapper topicPostMapper;
     private final jTopicMapper topicMapper;
+    private final jPostFileServiceImpl postFileService;
+    private final jFileService fileService;
+    private final RedisTemplate<String ,Object> redisTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -123,7 +126,14 @@ public class jPostServiceImpl implements jPostService {
                 postFileMapper.insert(rel);
             }
         }
-
+        if(postCreateDTO.getTopicIds() != null && !postCreateDTO.getTopicIds().isEmpty()){
+            for (Long topicId : postCreateDTO.getTopicIds()) {
+                TopicPostPO rel = new TopicPostPO();
+                rel.setPostId(post.getId());
+                rel.setTopicId(topicId);
+                topicPostMapper.insert(rel);
+            }
+        }
         // 返回详情或概要，这里复用现有转换
         return getPostDetail(post.getId());
     }
@@ -286,6 +296,27 @@ public class jPostServiceImpl implements jPostService {
 
         // 转换为VO并返回（包含最新统计）
         return convertToVO(postPO);
+    }
+
+    @Override
+    public void deletePost(Long postId) {
+        PostPO postPO = postMapper.selectById(postId);
+        if (postPO == null) {
+            throw new RuntimeException("动态不存在");
+        }
+//        if (!"PUBLISHED".equals(postPO.getStatus().name())) {
+//            throw new RuntimeException("动态不可删除");
+//        }
+        postMapper.deleteById(postId);
+        topicPostMapper.delete(new QueryWrapper<TopicPostPO>().eq("post_id", postId));
+        postFileMapper.delete(new QueryWrapper<PostFilePO>().eq("post_id", postId));
+        Long userId = BaseContext.getCurrentId();
+        likeService.deleteLike(postId, userId,"POST");
+        favService.deleteFavorite(postId, userId);
+
+        // todo: 删除缓存
+        redisTemplate.delete(PostConstant.POST_DETAIL_KEY_PREFIX + postId);
+        return ;
     }
 
     /**
@@ -528,6 +559,39 @@ public class jPostServiceImpl implements jPostService {
             postPO.setIsTop(postUpdateDTO.getIsTop());
         }
         postMapper.updateById(postPO);
+
+        // 删除文件
+        // postFileMapper根据taskId批量删除
+        postFileMapper.delete(new LambdaQueryWrapper<PostFilePO>().eq(PostFilePO::getPostId,postId));
+        // 更新文件
+
+        // filemapper 批量添加
+        Long currentId = BaseContext.getCurrentId();
+        List<FilePO> fileList = postUpdateDTO.getFiles().stream().map(
+                fileUrl -> FilePO.builder().userId(postId).fileUrl(fileUrl).build()
+        ).toList();
+        // 插入文件表
+        fileService.saveBatch(fileList);
+        List<Long> fileIds = fileList.stream().map(FilePO::getId).toList();
+        List<PostFilePO> taskFilesPOList = fileIds.stream()
+                .map(fileId -> PostFilePO.builder().postId(postId).fileId(fileId).build())
+                .toList();
+        // 插入文件-动态表
+        postFileService.saveBatch(taskFilesPOList);
+
+        // 关联文件（如果有）
+//        if (postUpdateDTO.getFiles() != null && !postUpdateDTO.getFileIds().isEmpty()) {
+//            int sort = 0;
+//            for (Long fileId : postCreateDTO.getFileIds()) {
+//                PostFilePO rel = new PostFilePO();
+//                rel.setPostId(post.getId());
+//                rel.setFileId(fileId);
+//                rel.setSort(sort++);
+//                postFileMapper.insert(rel);
+//            }
+//        }
+
+
         // 更新后写入es
         PostSearchVO postSearchVO = new PostSearchVO();
         postSearchVO.setId(postPO.getId());
@@ -537,6 +601,9 @@ public class jPostServiceImpl implements jPostService {
         UserPO userPO = userMapper.selectById(postPO.getUserId());
         postSearchVO.setUser(new PostSearchVO.UserVO(userPO.getId(), userPO.getNickname(), userPO.getAvatarUrl()));
         repository.save(postSearchVO);
+
+        // todo: 删除缓存
+        redisTemplate.delete(PostConstant.POST_DETAIL_KEY_PREFIX + postId);
     }
 
     /** 搜索：只要 title 或 content 完全等于 keyword */

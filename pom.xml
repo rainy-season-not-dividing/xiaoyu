@@ -18,6 +18,7 @@
     <modules>
         <module>xiaoyu-server</module>
         <module>xiaoyu-jiang</module>
+        <module>xiaoyu-common</module>
     </modules>
 
     <properties>

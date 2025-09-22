@@ -13,35 +13,35 @@ import org.springframework.stereotype.Service;
 
 /**
  * 独立推送服务实现类
- * 
+ *
  * @author xiaoyu
  */
 @Service
 @Slf4j
 public class jPushServiceImpl implements jPushService {
-    
+
     @Autowired
     private NotificationProducer notificationProducer;
-    
+
     @Autowired
     private MessageProducer messageProducer;
-    
+
     @Autowired
     private jUserMapper jUserMapper;
-    
+
     @Override
-    public void pushNotification(Long userId, String type, String title, String content, 
-                                Long refId, String refType, Long fromUserId) {
+    public void pushNotification(Long userId, String type, String title, String content,
+                                 Long refId, String refType, Long fromUserId) {
         try {
             // 不给自己发通知
             if (userId.equals(fromUserId)) {
                 return;
             }
-            
+
             NotificationMessage message = new NotificationMessage(
-                userId, type, title, content, refId, refType, fromUserId
+                    userId, type, title, content, refId, refType, fromUserId
             );
-            
+
             // 如果有发送者信息，填充发送者详情
             if (fromUserId != null) {
                 UserPO fromUser = jUserMapper.selectById(fromUserId);
@@ -50,101 +50,115 @@ public class jPushServiceImpl implements jPushService {
                     message.setFromUserAvatar(fromUser.getAvatarUrl());
                 }
             }
-            
+
             notificationProducer.sendNotificationPush(message);
-            
-            log.info("推送通知消息成功: userId={}, type={}, fromUserId={}", 
+
+            log.info("推送通知消息成功: userId={}, type={}, fromUserId={}",
                     userId, type, fromUserId);
-            
+
         } catch (Exception e) {
-            log.error("推送通知消息失败: userId={}, type={}, error={}", 
+            log.error("推送通知消息失败: userId={}, type={}, error={}",
                     userId, type, e.getMessage(), e);
         }
     }
-    
+
     @Override
     public void pushNotification(Long userId, String type, String title, String content) {
         pushNotification(userId, type, title, content, null, null, null);
     }
-    
+
     @Override
-    public void pushPrivateMessage(Long originalMessageId, Long fromUserId, Long toUserId, 
-                                  String content, String messageType) {
+    public void pushPrivateMessage(Long originalMessageId, Long fromUserId, Long toUserId,
+                                   String content) {
         try {
             PrivateMessage message = new PrivateMessage(
-                originalMessageId, fromUserId, toUserId, content, messageType
+                    originalMessageId, fromUserId, toUserId, content
             );
-            
+
             // 填充发送者信息
             UserPO fromUser = jUserMapper.selectById(fromUserId);
             if (fromUser != null) {
                 message.setFromUserNickname(fromUser.getNickname());
                 message.setFromUserAvatar(fromUser.getAvatarUrl());
             }
-            
+
             messageProducer.sendMessagePush(message);
-            
-            log.info("推送私信消息成功: originalMessageId={}, fromUserId={}, toUserId={}", 
+
+            log.info("推送私信消息成功: originalMessageId={}, fromUserId={}, toUserId={}",
                     originalMessageId, fromUserId, toUserId);
-            
+
         } catch (Exception e) {
-            log.error("推送私信消息失败: originalMessageId={}, fromUserId={}, toUserId={}, error={}", 
+            log.error("推送私信消息失败: originalMessageId={}, fromUserId={}, toUserId={}, error={}",
                     originalMessageId, fromUserId, toUserId, e.getMessage(), e);
         }
     }
-    
+
     @Override
     public void pushLikeNotification(Long toUserId, Long fromUserId, Long itemId, String itemType) {
         UserPO fromUser = jUserMapper.selectById(fromUserId);
         String fromUserNickname = fromUser != null ? fromUser.getNickname() : "某用户";
-        
+
         String title = "收到新的点赞";
         String content = String.format("%s 点赞了你的%s", fromUserNickname, getContentTypeName(itemType));
-        
-        pushNotification(toUserId, "LIKE", title, content, itemId, itemType, fromUserId);
+
+        pushNotification(toUserId, "INTERACTION", title, content, itemId, itemType, fromUserId);
     }
-    
+
     @Override
     public void pushFavoriteNotification(Long toUserId, Long fromUserId, Long itemId, String itemType) {
         UserPO fromUser = jUserMapper.selectById(fromUserId);
         String fromUserNickname = fromUser != null ? fromUser.getNickname() : "某用户";
-        
+
         String title = "收到新的收藏";
         String content = String.format("%s 收藏了你的%s", fromUserNickname, getContentTypeName(itemType));
-        
-        pushNotification(toUserId, "FAVORITE", title, content, itemId, itemType, fromUserId);
+
+        pushNotification(toUserId, "INTERACTION", title, content, itemId, itemType, fromUserId);
     }
-    
+
     @Override
-    public void pushCommentNotification(Long toUserId, Long fromUserId, Long itemId, 
-                                       String itemType, String commentContent) {
+    public void pushCommentNotification(Long toUserId, Long fromUserId, Long itemId,
+                                        String itemType, String commentContent) {
         UserPO fromUser = jUserMapper.selectById(fromUserId);
         String fromUserNickname = fromUser != null ? fromUser.getNickname() : "某用户";
-        
+
         String title = "收到新的评论";
-        String content = String.format("%s 评论了你的%s: %s", 
-                fromUserNickname, getContentTypeName(itemType), 
+        String content = String.format("%s 评论了你的%s: %s",
+                fromUserNickname, getContentTypeName(itemType),
                 truncateContent(commentContent, 50));
-        
-        pushNotification(toUserId, "COMMENT", title, content, itemId, itemType, fromUserId);
+
+        pushNotification(toUserId, "INTERACTION", title, content, itemId, itemType, fromUserId);
     }
-    
+
     @Override
     public void pushShareNotification(Long toUserId, Long fromUserId, Long itemId, String itemType) {
         UserPO fromUser = jUserMapper.selectById(fromUserId);
         String fromUserNickname = fromUser != null ? fromUser.getNickname() : "某用户";
-        
+
         String title = "收到新的转发";
         String content = String.format("%s 转发了你的%s", fromUserNickname, getContentTypeName(itemType));
-        
-        pushNotification(toUserId, "SHARE", title, content, itemId, itemType, fromUserId);
+
+        pushNotification(toUserId, "INTERACTION", title, content, itemId, itemType, fromUserId);
     }
-    
+
     @Override
     public void pushSystemNotification(Long userId, String title, String content) {
         pushNotification(userId, "SYSTEM", title, content);
     }
-    
+
+    @Override
+    public void pushAtUserNotification(Long toUserId, Long fromUserId, Long itemId,
+                                       String itemType, String commentContent) {
+        UserPO fromUser = jUserMapper.selectById(fromUserId);
+        String fromUserNickname = fromUser != null ? fromUser.getNickname() : "某用户";
+
+        String title = "有人@了你";
+        String content = String.format("%s 在%s中@了你: %s",
+                fromUserNickname, getContentTypeName(itemType),
+                truncateContent(commentContent, 50));
+
+        pushNotification(toUserId, "INTERACTION", title, content, itemId, itemType, fromUserId);
+    }
+
     /**
      * 获取内容类型中文名称
      */
@@ -160,7 +174,7 @@ public class jPushServiceImpl implements jPushService {
                 return "内容";
         }
     }
-    
+
     /**
      * 截断内容
      */

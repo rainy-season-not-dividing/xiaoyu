@@ -2,61 +2,47 @@ package com.xiaoyua.vo.message;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.xiaoyua.vo.user.UserSimpleVO;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 /**
  * 私信消息VO
- * 
+ *
  * @author xiaoyu
  */
 @Data
 public class MessageVO {
-    
+
     /**
      * 消息ID
      */
     private Long id;
-    
+
     /**
-     * 发送者ID
+     * 发送者信息
      */
-    @JsonProperty("from_id")
-    private Long fromId;
-    
+    private UserSimpleVO fromUser;
+
     /**
-     * 接收者ID
+     * 接收者信息
      */
-    @JsonProperty("to_id")
-    private Long toId;
-    
+    private UserSimpleVO toUser;
+
     /**
      * 消息内容
      */
     private String content;
-    
+
     /**
-     * 消息类型
+     * 是否为当前用户发送的消息
      */
-    @JsonProperty("message_type")
-    private String messageType;
-    
+    private Boolean isSelf;
+
     /**
-     * 消息状态
+     * 发送时间
      */
-    private String status;
-    
-    /**
-     * 是否已读
-     */
-    @JsonProperty("is_read")
-    private Integer isRead;
-    
-    /**
-     * 创建时间
-     */
-    @JsonProperty("created_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 }

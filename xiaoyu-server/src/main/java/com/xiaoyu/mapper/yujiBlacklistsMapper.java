@@ -10,5 +10,5 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface yujiBlacklistsMapper extends BaseMapper<BlacklistsPO> {
 
-    Page<BlacklistsVO> getBlackList(Page<Object> objectPage, Long userId);
+    Page<BlacklistsVO> getBlackList(Page<BlacklistsVO> objectPage, Long userId);
 }

@@ -1,6 +1,7 @@
 package com.xiaoyu.vo.task;
 
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.xiaoyu.entity.TasksPO;
 import lombok.Data;
 
@@ -14,5 +15,6 @@ public class PublishTaskVO {
     private String title;
     private BigDecimal reward;
     private TasksPO.Status status;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 }

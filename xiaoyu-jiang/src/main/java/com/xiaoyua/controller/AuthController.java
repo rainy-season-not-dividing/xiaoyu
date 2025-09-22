@@ -93,7 +93,6 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public Result<String> logout() {
-        BaseContext.clearCurrentId();
         return Result.success("退出登录成功");
     }
 }
