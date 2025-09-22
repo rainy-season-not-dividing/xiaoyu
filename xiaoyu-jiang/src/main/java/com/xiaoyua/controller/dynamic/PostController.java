@@ -205,7 +205,15 @@ public class PostController {
             List<PostVO> list = redisUtil.<PostVO, Long>queryWithLogicExpire(
                     PostConstant.POST_DETAIL_KEY_PREFIX,
                     postId, PostVO.class,
-                    id-> Collections.singletonList(jPostService.getPostDetail(id)),
+                    id-> {
+                        PostVO postVo =  jPostService.getPostDetail(id);
+                        List<PostVO> postList = new ArrayList<>();
+                        if(postVo != null){
+                            postList.add(postVo);
+                            return postList;
+                        }
+                        return null;
+                    },
                     PostConstant.POST_DETAIL_TIMEOUT, TimeUnit.SECONDS
             );
             return Result.success("获取成功", list!=null?list.getFirst():null);

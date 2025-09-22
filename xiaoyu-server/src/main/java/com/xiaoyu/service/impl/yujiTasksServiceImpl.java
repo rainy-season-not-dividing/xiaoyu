@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.xiaoyu.exception.NotExistsException;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -159,7 +160,15 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
         List<GetTasksVO> list = redisUtil.<GetTasksVO, Long>queryWithLogicExpire(
                 TaskConstant.TASK_DETAIL_PREFIX,
                 taskId, GetTasksVO.class,
-                id-> Collections.singletonList(yujiTasksMapper.getTask(id)),
+                id-> {
+                    GetTasksVO taskInfo = yujiTasksMapper.getTask(id);
+                    List<GetTasksVO> resultList = new ArrayList<>();
+                    if(taskInfo != null){
+                        resultList.add(taskInfo);
+                        return resultList;
+                    }
+                    return null;
+                },
                 TaskConstant.TASK_DETAIL_EXPIRE, TimeUnit.SECONDS
         );
         // 修改task_stats

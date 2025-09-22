@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import com.xiaoyu.constant.UserConstant;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +60,15 @@ public class UserController {
         List<UsersPO> list = redisUtil.<UsersPO, Long>queryWithLogicExpire(
                 UserConstant.USER_SELF_INFO_PREFIX,
                 currentId, UsersPO.class,
-                id-> Collections.singletonList(yujiUserService.getUserSelfInfo(id)),
+                id-> {
+                    UsersPO user = yujiUserService.getUserSelfInfo(id);
+                    List<UsersPO> resultList = new ArrayList<>();
+                    if (user != null) {
+                        resultList.add(user);
+                        return resultList;
+                    }
+                    return null;
+                    },
                 UserConstant.USER_SELF_INFO_TIMEOUT, TimeUnit.SECONDS
                 );
         return Result.success(list!=null?list.getFirst():null);

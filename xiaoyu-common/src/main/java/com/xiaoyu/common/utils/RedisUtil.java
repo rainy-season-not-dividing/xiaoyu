@@ -1,6 +1,9 @@
 package com.xiaoyu.common.utils;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.github.xiaoymin.knife4j.core.util.StrUtil;
 import com.xiaoyu.common.dto.RedisDataDTO;
 import lombok.extern.slf4j.Slf4j;
@@ -139,19 +142,39 @@ public class RedisUtil {
                 return null;
             }
         }
-//        else{
-//            List<R> dbData = dbFallBack.apply(id);
-//            RedisDataDTO<R> cacheData = new RedisDataDTO<>();
-//            cacheData.setData(dbData);
-//            cacheData.setExpireTime(LocalDateTime.now().plusSeconds(CACHE_SHOP_TTL_BASE));
-//            redisTemplate.opsForValue().set(key, cacheData);
-//            return dbData;
-//        }
+        else{
+            List<R> dbData = dbFallBack.apply(id);
+            if(dbData!=null){
+                RedisDataDTO<R> cacheData = new RedisDataDTO<>();
+                cacheData.setData(dbData);
+                cacheData.setExpireTime(LocalDateTime.now().plusSeconds(CACHE_SHOP_TTL_BASE));
+                redisTemplate.opsForValue().set(key, cacheData);
+            }
+            else{
+                redisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL_BASE, TimeUnit.SECONDS);
+            }
+            RedisDataDTO<R> cacheData = new RedisDataDTO<>();
+            cacheData.setData(dbData);
+            cacheData.setExpireTime(LocalDateTime.now().plusSeconds(CACHE_SHOP_TTL_BASE));
+            redisTemplate.opsForValue().set(key, cacheData);
+            return dbData;
+        }
 //        log.info("缓存命中：{}",redisValue);
         //1.2、存在
-        RedisDataDTO<R> redisData = objectMapper.convertValue(redisValue, RedisDataDTO.class);
+        // 构建RedisDataDTO<List<R>>的完整类型
+        // 1. 构建List<R>的类型（明确列表元素是R类型，如UsersPO）
+        CollectionType listType = objectMapper.getTypeFactory()
+                .constructCollectionType(List.class, type);
+        // 2. 构建RedisDataDTO<T>的类型，其中T是List<R>
+        JavaType javaType = objectMapper.getTypeFactory()
+                .constructParametricType(RedisDataDTO.class, listType);
+
+        // 3. 反序列化时使用完整类型
+        RedisDataDTO<R> redisData = objectMapper.convertValue(redisValue, javaType);
+
+
+        List<R> data = redisData.getData();  // 直接获取List<R>
         //1.2.1、判断是否逻辑过期
-        List<R> data = redisData.getData();
         // 1.2.1.1、逻辑未过期--返回结果
         if(redisData.getExpireTime().isAfter(LocalDateTime.now())){
             return data;
