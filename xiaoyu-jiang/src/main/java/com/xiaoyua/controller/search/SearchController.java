@@ -23,7 +23,7 @@ public class SearchController {
             String keyword,
             @RequestParam(required=false, defaultValue = "1") Integer page,
             @RequestParam(required=false, defaultValue = "20") Integer size) {
-
+        log.info("搜索动态");
         return Result.success(jPostService.searchExact(keyword,page,size));
     }
 

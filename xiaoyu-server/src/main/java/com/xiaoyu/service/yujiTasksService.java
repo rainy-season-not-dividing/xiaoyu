@@ -14,7 +14,7 @@ public interface yujiTasksService extends IService<TasksPO> {
 
     PageResult<GetTasksVO> getTasks(Integer page, Integer size, TasksPO.Status status, String keyword, Integer tagId);
 
-    PageResult<GetTasksVO> getMyPublishedTasks(Integer page, Integer size);
+    PageResult<GetTasksVO> getMyPublishedTasks(Integer page, Integer size,  TasksPO.Status status);
 
     PageResult<GetTasksVO> getMyReceivedTasks(Integer page, Integer size);
 

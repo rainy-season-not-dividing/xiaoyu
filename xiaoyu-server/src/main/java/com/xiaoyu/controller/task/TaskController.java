@@ -44,10 +44,11 @@ public class TaskController {
     @GetMapping("/my-published")
     public Result<PageResult<GetTasksVO>> getMyPublishedTasks(
             @RequestParam(required=false,defaultValue="1") Integer page,
-            @RequestParam(required=false,defaultValue="20") Integer size
+            @RequestParam(required=false,defaultValue="20") Integer size,
+            @RequestParam(required=false) TasksPO.Status status    // 任务状态
     ){
         log.info("获取我发布的任务列表");
-        return Result.success(yujiTasksService.getMyPublishedTasks(page,size));
+        return Result.success(yujiTasksService.getMyPublishedTasks(page,size,status));
     }
 
     @GetMapping("/my-received")

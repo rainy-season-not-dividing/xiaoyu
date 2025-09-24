@@ -1,8 +1,10 @@
 package com.xiaoyu.config;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
@@ -15,6 +17,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 /**
  * Redis配置类
  * 功能：配置RedisTemplate的序列化方式规则，解决默认JDK序列化性能差、数据不可读问题
@@ -24,6 +29,34 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Slf4j
 public class RedisConfiguration {
 
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper om =  new ObjectMapper()
+                .setVisibility(PropertyAccessor.ALL,
+                        JsonAutoDetect.Visibility.ANY)
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                // 关键：忽略 POJO 中不认识的字段
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
+
+        // 不加这种全局改变的，会导致字段污染，直接修改DTO类，让他在写入redis前，加上类的信息即可。
+//                .activateDefaultTyping(
+//                        LaissezFaireSubTypeValidator.instance,
+//                        ObjectMapper.DefaultTyping.NON_FINAL,
+//                        JsonTypeInfo.As.PROPERTY);
+
+        // 兼容 LocalDate 空格格式
+        om.configOverride(LocalDate.class)
+                .setFormat(JsonFormat.Value.forPattern("yyyy-MM-dd"));
+
+        // 兼容 LocalDateTime 空格格式
+        om.configOverride(LocalDateTime.class)
+                .setFormat(JsonFormat.Value.forPattern("yyyy-MM-dd HH:mm:ss"));
+
+        return om;
+    }
+
     /**
      * 自定义自定义RedisTemplate实例（自定义序列化规则）
      * 键：String类型（用StringRedisSerializer，保证key可读）
@@ -32,7 +65,7 @@ public class RedisConfiguration {
      * @return 配置完成的RedisTemplate
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
         log.info("开始初始化RedisTemplate（自定义序列化规则）...");
 
         // 1. 创建RedisTemplate核心对象
@@ -45,30 +78,26 @@ public class RedisConfiguration {
         redisTemplate.setKeySerializer(stringRedisSerializer);          // 普通Key序列化
         redisTemplate.setHashKeySerializer(stringRedisSerializer);     // Hash结构的Key序列化
 
-        // 3.1 配置Jackson的ObjectMapper（控制JSON序列化规则）
-        ObjectMapper objectMapper = new ObjectMapper();
-        // 3.1.1 允许Jackson访问对象的所有字段（包括private、protected）
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        // 3.1.2 支持多态类型（序列化时添加@class字段，反序列化时能识别具体子类）
-        // 注意：LaissezFaireSubTypeValidator是Jackson 2.10+推荐的安全校验器，避免类型注入风险
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,  // 仅对非final类启用多态
-                JsonTypeInfo.As.PROPERTY               // @class字段以属性形式存入JSON
-        );
-        // 3.1.3 解决JDK8时间类型（LocalDateTime/LocalDate）序列化问题（避免转为时间戳）
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);  // 禁用时间戳序列化
-        // 注册JDK8时间模块
-        objectMapper.registerModule(new JavaTimeModule());
+
+
 
         // 3.2  配置Value的序列化器（Jackson JSON，支持对象自动序列化）  3.x的版本要在new序列化器的时候，通过构造函数传入objectmapper
         Jackson2JsonRedisSerializer<Object> jacksonSerializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
 
 
 
+
         // 3.3 绑定Value序列化器到RedisTemplate
         redisTemplate.setValueSerializer(jacksonSerializer);          // 普通Value序列化
         redisTemplate.setHashValueSerializer(jacksonSerializer);     // Hash结构的Value序列化
+
+
+
+        // 3.3 用普通的String序列化器对值进行序列化
+//        redisTemplate.setValueSerializer(stringRedisSerializer);          // 普通Value序列化
+//        redisTemplate.setHashValueSerializer(stringRedisSerializer);     // Hash结构的Value序列化
+
+
 
         // 4. 初始化RedisTemplate（应用配置，必须调用，否则序列化规则不生效）
         redisTemplate.afterPropertiesSet();

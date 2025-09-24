@@ -57,6 +57,7 @@ public class UserController {
     public Result<UsersPO> getUserSelfInfo() throws InterruptedException{
         log.info("获取当前用户的信息");
         Long currentId = BaseContext.getId();
+//        Long currentId = 1L;
         List<UsersPO> list = redisUtil.<UsersPO, Long>queryWithLogicExpire(
                 UserConstant.USER_SELF_INFO_PREFIX,
                 currentId, UsersPO.class,

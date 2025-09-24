@@ -106,7 +106,7 @@ public class MessageConsumer {
     private void pushToWebSocket(PrivateMessage message) {
         try {
             Map<String, Object> wsMessage = Map.of(
-                "type", "CHAT",
+                "type", "private_message",
                 "message_id", message.getOriginalMessageId(),
                 "from_user_id", message.getFromUserId(),
                 "from_user_nickname", message.getFromUserNickname() != null ? message.getFromUserNickname() : "",

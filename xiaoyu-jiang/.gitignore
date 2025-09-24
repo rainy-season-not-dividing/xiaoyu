@@ -29,17 +29,12 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-
 ### VS Code ###
 .vscode/
 
 # 阿里云密钥
-application.yml
 application-dev.yml
-application_j.yml
-application_j-dev.yml
 application-prod.yml
 *.key
 *.pem
 .env
-

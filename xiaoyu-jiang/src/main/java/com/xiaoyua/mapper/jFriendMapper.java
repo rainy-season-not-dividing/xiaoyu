@@ -2,6 +2,7 @@ package com.xiaoyua.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xiaoyua.entity.FriendPO;
+import com.xiaoyua.entity.FriendshipPO;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

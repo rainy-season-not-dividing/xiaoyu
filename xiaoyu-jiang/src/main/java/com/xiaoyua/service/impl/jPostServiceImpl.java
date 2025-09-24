@@ -171,7 +171,7 @@ public class jPostServiceImpl implements jPostService {
                 .collect(java.util.stream.Collectors.toList());
 
 
-        // 模拟数据加入es中
+        // todo: 模拟数据加入es中(正式测试时要删除)
 //        List<PostSearchVO> searchVOs = vos.stream().map(
 //                postVO->{
 //                    PostSearchVO searchVO = new PostSearchVO();

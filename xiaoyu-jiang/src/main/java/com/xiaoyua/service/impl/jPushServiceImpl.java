@@ -159,6 +159,22 @@ public class jPushServiceImpl implements jPushService {
         pushNotification(toUserId, "INTERACTION", title, content, itemId, itemType, fromUserId);
     }
 
+    @Override
+    public void pushFriendRequestNotification(Long toUserId, Long fromUserId, String requestMessage) {
+        UserPO fromUser = jUserMapper.selectById(fromUserId);
+        String fromUserNickname = fromUser != null ? fromUser.getNickname() : "某用户";
+
+        String title = "收到好友申请";
+        String content = String.format("%s 向你发送了好友申请: %s",
+                fromUserNickname,
+                truncateContent(requestMessage, 50));
+
+        // 使用INTERACTION类型，refType为FRIEND_REQUEST
+        pushNotification(toUserId, "INTERACTION", title, content, fromUserId, "FRIEND_REQUEST", fromUserId);
+
+        log.info("推送好友申请通知成功: toUserId={}, fromUserId={}", toUserId, fromUserId);
+    }
+
     /**
      * 获取内容类型中文名称
      */

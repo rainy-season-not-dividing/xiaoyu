@@ -128,13 +128,13 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
     }
 
     @Override
-    public PageResult<GetTasksVO> getMyPublishedTasks(Integer page, Integer size) {
+    public PageResult<GetTasksVO> getMyPublishedTasks(Integer page, Integer size, TasksPO.Status status) {
         // 封装Page
         Page<GetTasksVO> pageSet = Page.of(page,size);
         Long currentId = BaseContext.getId();
         // mysql查询，自定义sql语句
         // todo: redis优化，减轻数据库压力
-        Page<GetTasksVO> pageInfo = yujiTasksMapper.getTasks(pageSet,null,null,null, currentId);
+        Page<GetTasksVO> pageInfo = yujiTasksMapper.getTasks(pageSet,status,null,null, currentId);
         // 返回结果
         return new PageResult<>(pageInfo.getRecords(),page,size,pageInfo.getTotal());
 

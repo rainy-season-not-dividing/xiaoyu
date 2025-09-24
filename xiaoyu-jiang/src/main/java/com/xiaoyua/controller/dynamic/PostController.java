@@ -7,6 +7,7 @@ import com.xiaoyua.dto.post.PostCreateDTO;
 import com.xiaoyua.dto.post.PostForm;
 import com.xiaoyua.dto.post.PostUpdateDTO;
 import com.xiaoyua.entity.FilePO;
+import com.xiaoyua.mapper.jPostStatMapper;
 import com.xiaoyua.service.jPostService;
 import com.xiaoyua.service.jLikeService;
 import com.xiaoyua.service.jFavService;
@@ -59,6 +60,9 @@ public class PostController {
 
     @Resource
     private RedisTemplate<String , Object> redisTemplate;
+
+    @Resource
+    private  jPostStatMapper postStatMapper;
 
 
 
@@ -222,6 +226,9 @@ public class PostController {
             return Result.error(e.getMessage());
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+        finally{
+            try { postStatMapper.incView(postId); } catch (Exception ignored) {}
         }
     }
 

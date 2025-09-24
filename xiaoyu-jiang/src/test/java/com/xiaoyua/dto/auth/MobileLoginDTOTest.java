@@ -1,4 +1,4 @@
-package com.xiaoyu_j.dto.auth;
+package com.xiaoyua.dto.auth;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;

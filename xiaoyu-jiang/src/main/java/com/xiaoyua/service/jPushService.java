@@ -105,4 +105,13 @@ public interface jPushService {
      */
     void pushAtUserNotification(Long toUserId, Long fromUserId, Long itemId,
                                 String itemType, String commentContent);
-}
+
+    /**
+     * 推送好友请求通知
+     *
+     * @param toUserId 被请求的用户ID
+     * @param fromUserId 请求用户的ID
+     * @param requestMessage 请求信息
+     */
+     void pushFriendRequestNotification(Long toUserId, Long fromUserId, String requestMessage);
+ }

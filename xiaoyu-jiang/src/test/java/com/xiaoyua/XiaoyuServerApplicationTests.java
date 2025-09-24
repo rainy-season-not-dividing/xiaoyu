@@ -1,4 +1,4 @@
-package com.xiaoyu_j;
+package com.xiaoyua;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

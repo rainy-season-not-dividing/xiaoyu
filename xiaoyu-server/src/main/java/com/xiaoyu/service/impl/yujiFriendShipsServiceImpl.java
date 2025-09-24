@@ -17,11 +17,11 @@ import com.xiaoyu.service.yujiBlacklistsService;
 import com.xiaoyu.service.yujiFriendMessagesService;
 import com.xiaoyu.service.yujiFriendShipsService;
 import com.xiaoyu.vo.friend.FriendlistVO;
+import com.xiaoyua.service.jPushService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 
 
@@ -38,6 +38,9 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
     @Resource
     private yujiFriendShipsMapper yujiFriendShipsMapper;
 
+    @Resource
+    private jPushService jPushService;
+
 
     @Override
     @Transactional
@@ -51,7 +54,6 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
         friendMessagesPO.setToId(friendId);
         friendMessagesPO.setContent(sendFriendRequestDTO.getMessage());
         yujiFriendMessagesService.save(friendMessagesPO);
-        // todo:发送好友申请通知
         // 创建好友关系
         // 判断是否已经是好友关系
         FriendshipsPO friendshipPO = getOne(new LambdaQueryWrapper<>(FriendshipsPO.class)
@@ -68,6 +70,15 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
             // 处理已经是好友过了的逻辑
             if(friendshipPO.getStatus() == FriendshipsPO.Status.ACCEPTED) throw new AlreadyBeFriendException("已经是好友啦");
             if(friendshipPO.getStatus() == FriendshipsPO.Status.PENDING) throw new AlreadySendFriendShipRequestException("已经申请好友了");
+        }
+        // 发送好友申请通知
+        try {
+            jPushService.pushFriendRequestNotification(friendId, currentId, sendFriendRequestDTO.getMessage());
+            log.info("好友申请通知发送成功: fromUserId={}, toUserId={}", currentId, friendId);
+        } catch (Exception e) {
+            log.error("好友申请通知发送失败: fromUserId={}, toUserId={}, error={}",
+                    currentId, friendId, e.getMessage(), e);
+            // 通知发送失败不影响好友申请的主流程，只记录日志
         }
 
         // 被拒绝或是被删除过

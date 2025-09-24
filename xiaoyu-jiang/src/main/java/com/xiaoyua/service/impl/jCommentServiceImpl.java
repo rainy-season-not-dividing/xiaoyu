@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.comment.CommentCreateDTO;
 import com.xiaoyua.entity.CommentPO;
@@ -48,6 +50,16 @@ public class jCommentServiceImpl implements jCommentService {
     @Autowired
     private jPostStatMapper jPostStatMapper;
 
+    public final class JacksonUtil {
+        private static final ObjectMapper MAPPER = new ObjectMapper();
+        public static String toJson(Object obj) {
+            try {
+                return obj == null ? null : MAPPER.writeValueAsString(obj);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("序列化失败", e);
+            }
+        }
+    }
     @Override
     public void addComment(CommentCreateDTO comment) {
         CommentPO commentPO=new CommentPO();
@@ -56,10 +68,9 @@ public class jCommentServiceImpl implements jCommentService {
         commentPO.setStatus(CommentPO.Status.VISIBLE);
         commentPO.setItemType(CommentPO.ItemType.POST);
         commentPO.setAtUsers(
-                comment.getAtUsers() == null ? null :
-                        comment.getAtUsers().stream()
-                                .map(String::valueOf)
-                                .collect(Collectors.joining(","))
+                comment.getAtUsers() == null || comment.getAtUsers().isEmpty()
+                        ? null                                  // 数据库接受 NULL
+                        : JacksonUtil.toJson(comment.getAtUsers()) // 得到 "[{"id":1,"nickname":"xxx"},...]"
         );
         commentPO.setItemId(comment.getPostId());
         commentPO.setParentId(comment.getParentId());
@@ -87,7 +98,6 @@ public class jCommentServiceImpl implements jCommentService {
     /**
      * 查询一篇文章的全部评论（含二级回复）
      */
-    @Override
     public IPage<CommentVO> getComments(Long postId, int page, int size, String sort) {
         //先查一级评论parent_id = 0
         IPage<CommentPO> poPage = jCommentMapper.selectPage(
@@ -260,7 +270,7 @@ public class jCommentServiceImpl implements jCommentService {
                         .eq("item_type", type.toUpperCase())
         );
     }
-
+    
     /**
      * 创建评论通知
      */
@@ -268,30 +278,30 @@ public class jCommentServiceImpl implements jCommentService {
         try {
             Long fromUserId = commentPO.getUserId();
             Long postId = commentPO.getItemId();
-
+            
             // 获取动态作者ID
             PostPO post = jPostMapper.selectById(postId);
             if (post == null) {
                 return;
             }
-
+            
             Long toUserId = post.getUserId();
-
+            
             // 不给自己发通知
             if (toUserId.equals(fromUserId)) {
                 return;
             }
-
+            
             // 获取评论用户信息
             UserPO fromUser = jUserMapper.selectById(fromUserId);
             if (fromUser == null) {
                 return;
             }
-
+            
             // 构建通知内容
             String title = "收到新的评论";
             String content = String.format("%s 评论了你的动态", fromUser.getNickname());
-
+            
             // 如果是回复评论，需要特殊处理
             if (commentPO.getParentId() != null && commentPO.getParentId() > 0) {
                 // 获取被回复的评论
@@ -305,119 +315,49 @@ public class jCommentServiceImpl implements jCommentService {
                 }
                 content = String.format("%s 回复了你的动态", fromUser.getNickname());
             }
-
+            
             // 使用PushService发送通知
             jPushService.pushNotification(
-                    toUserId,
-                    NotificationPO.Type.COMMENT.name(),
-                    title,
-                    content,
-                    postId,
-                    NotificationPO.RefType.POST.name(),
-                    fromUserId
+                toUserId,
+                NotificationPO.Type.COMMENT.name(),
+                title,
+                content,
+                postId,
+                NotificationPO.RefType.POST.name(),
+                fromUserId
             );
-
-            // 处理@用户通知
-            handleAtUserNotifications(commentPO, fromUserId);
-
+            
         } catch (Exception e) {
-            log.error("创建评论通知失败: commentId={}, error={}",
-                    commentPO.getId(), e.getMessage(), e);
+            log.error("创建评论通知失败: commentId={}, error={}", 
+                commentPO.getId(), e.getMessage(), e);
         }
     }
-
+    
     /**
      * 创建回复通知
      */
     private void createReplyNotification(CommentPO replyComment, CommentPO parentComment, UserPO fromUser) {
         try {
             Long toUserId = parentComment.getUserId();
-
+            
             // 构建通知内容
             String title = "收到新的回复";
             String content = String.format("%s 回复了你的评论", fromUser.getNickname());
-
+            
             // 使用PushService发送通知
             jPushService.pushNotification(
-                    toUserId,
-                    NotificationPO.Type.COMMENT.name(),
-                    title,
-                    content,
-                    replyComment.getItemId(), // 关联到动态ID
-                    NotificationPO.RefType.POST.name(),
-                    fromUser.getId()
+                toUserId,
+                NotificationPO.Type.COMMENT.name(),
+                title,
+                content,
+                replyComment.getItemId(), // 关联到动态ID
+                NotificationPO.RefType.POST.name(),
+                fromUser.getId()
             );
-
+            
         } catch (Exception e) {
-            log.error("创建回复通知失败: replyCommentId={}, parentCommentId={}, error={}",
-                    replyComment.getId(), parentComment.getId(), e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 处理@用户通知
-     */
-    private void handleAtUserNotifications(CommentPO commentPO, Long fromUserId) {
-        try {
-            // 解析@用户列表
-            String atUsersStr = commentPO.getAtUsers();
-            if (atUsersStr == null || atUsersStr.trim().isEmpty()) {
-                return;
-            }
-
-            // 解析用户ID列表
-            List<Long> atUserIds = parseAtUserIds(atUsersStr);
-            if (CollUtil.isEmpty(atUserIds)) {
-                return;
-            }
-
-            // 获取评论内容
-            String commentContent = commentPO.getContent();
-            Long itemId = commentPO.getItemId();
-            String itemType = commentPO.getItemType().name();
-
-            // 给每个被@的用户发送通知
-            for (Long atUserId : atUserIds) {
-                // 不给自己发通知
-                if (atUserId.equals(fromUserId)) {
-                    continue;
-                }
-
-                // 发送@用户通知
-                jPushService.pushAtUserNotification(
-                        atUserId,
-                        fromUserId,
-                        itemId,
-                        itemType,
-                        commentContent
-                );
-            }
-
-        } catch (Exception e) {
-            log.error("处理@用户通知失败: commentId={}, error={}",
-                    commentPO.getId(), e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 解析@用户ID列表
-     */
-    private List<Long> parseAtUserIds(String atUsersStr) {
-        try {
-            if (atUsersStr == null || atUsersStr.trim().isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            // 按逗号分割并转换为Long列表
-            return Arrays.stream(atUsersStr.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(Long::valueOf)
-                    .collect(Collectors.toList());
-
-        } catch (Exception e) {
-            log.warn("解析@用户ID列表失败，原始值: {}，错误: {}", atUsersStr, e.getMessage());
-            return Collections.emptyList();
+            log.error("创建回复通知失败: replyCommentId={}, parentCommentId={}, error={}", 
+                replyComment.getId(), parentComment.getId(), e.getMessage(), e);
         }
     }
 
