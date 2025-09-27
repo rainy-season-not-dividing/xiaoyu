@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaoyua.mapper.jPostMapper">
+
+    <!-- 查询用户点赞的动态列表 -->
+    <select id="selectLikedPostsByUser" resultType="com.xiaoyua.entity.PostPO">
+        SELECT DISTINCT p.*
+        FROM posts p
+        INNER JOIN likes l ON p.id = l.item_id
+        WHERE l.user_id = #{userId}
+        AND l.item_type = 'POST'
+        AND p.status = 'PUBLISHED'
+        AND (
+        p.visibility = 'PUBLIC'
+        OR (p.visibility = 'FRIEND' AND EXISTS (
+        SELECT 1 FROM friendships f
+        WHERE ((f.user_id = p.user_id AND f.friend_id = #{userId})
+        OR (f.user_id = #{userId} AND f.friend_id = p.user_id))
+        AND f.status = 'ACCEPTED'
+        ))
+        OR (p.visibility = 'CAMPUS' AND EXISTS (
+        SELECT 1 FROM users u1, users u2
+        WHERE u1.id = p.user_id AND u2.id = #{userId}
+        AND u1.campus_id = u2.campus_id
+        AND u1.campus_id IS NOT NULL
+        ))
+        OR p.user_id = #{userId}
+        )
+        <choose>
+            <when test="sort == 'hot'">
+                ORDER BY l.created_at DESC, p.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY l.created_at DESC, p.created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 统计用户点赞的动态总数 -->
+    <select id="countLikedPostsByUser" resultType="long">
+        SELECT COUNT(DISTINCT p.id)
+        FROM posts p
+                 INNER JOIN likes l ON p.id = l.item_id
+        WHERE l.user_id = #{userId}
+          AND l.item_type = 'POST'
+          AND p.status = 'PUBLISHED'
+          AND (
+            p.visibility = 'PUBLIC'
+                OR (p.visibility = 'FRIEND' AND EXISTS (
+                SELECT 1 FROM friendships f
+                WHERE ((f.user_id = p.user_id AND f.friend_id = #{userId})
+                    OR (f.user_id = #{userId} AND f.friend_id = p.user_id))
+                  AND f.status = 'ACCEPTED'
+            ))
+                OR (p.visibility = 'CAMPUS' AND EXISTS (
+                SELECT 1 FROM users u1, users u2
+                WHERE u1.id = p.user_id AND u2.id = #{userId}
+                  AND u1.campus_id = u2.campus_id
+                  AND u1.campus_id IS NOT NULL
+            ))
+                OR p.user_id = #{userId}
+            )
+    </select>
+
+    <!-- 查询用户收藏的动态列表 -->
+    <select id="selectFavoritedPostsByUser" resultType="com.xiaoyua.entity.PostPO">
+        SELECT DISTINCT p.*
+        FROM posts p
+        INNER JOIN favorites f ON p.id = f.item_id
+        WHERE f.user_id = #{userId}
+        AND f.item_type = 'POST'
+        AND p.status = 'PUBLISHED'
+        AND (
+        p.visibility = 'PUBLIC'
+        OR (p.visibility = 'FRIEND' AND EXISTS (
+        SELECT 1 FROM friendships fs
+        WHERE ((fs.user_id = p.user_id AND fs.friend_id = #{userId})
+        OR (fs.user_id = #{userId} AND fs.friend_id = p.user_id))
+        AND fs.status = 'ACCEPTED'
+        ))
+        OR (p.visibility = 'CAMPUS' AND EXISTS (
+        SELECT 1 FROM users u1, users u2
+        WHERE u1.id = p.user_id AND u2.id = #{userId}
+        AND u1.campus_id = u2.campus_id
+        AND u1.campus_id IS NOT NULL
+        ))
+        OR p.user_id = #{userId}
+        )
+        <choose>
+            <when test="sort == 'hot'">
+                ORDER BY f.created_at DESC, p.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY f.created_at DESC, p.created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 统计用户收藏的动态总数 -->
+    <select id="countFavoritedPostsByUser" resultType="long">
+        SELECT COUNT(DISTINCT p.id)
+        FROM posts p
+                 INNER JOIN favorites f ON p.id = f.item_id
+        WHERE f.user_id = #{userId}
+          AND f.item_type = 'POST'
+          AND p.status = 'PUBLISHED'
+          AND (
+            p.visibility = 'PUBLIC'
+                OR (p.visibility = 'FRIEND' AND EXISTS (
+                SELECT 1 FROM friendships fs
+                WHERE ((fs.user_id = p.user_id AND fs.friend_id = #{userId})
+                    OR (fs.user_id = #{userId} AND fs.friend_id = p.user_id))
+                  AND fs.status = 'ACCEPTED'
+            ))
+                OR (p.visibility = 'CAMPUS' AND EXISTS (
+                SELECT 1 FROM users u1, users u2
+                WHERE u1.id = p.user_id AND u2.id = #{userId}
+                  AND u1.campus_id = u2.campus_id
+                  AND u1.campus_id IS NOT NULL
+            ))
+                OR p.user_id = #{userId}
+            )
+    </select>
+
+    <!-- 动态VO结果映射 -->
+    <resultMap id="PostVOMap" type="com.xiaoyua.vo.post.PostVO">
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="campus_id" property="campusId"/>
+        <result column="visibility" property="visibility"/>
+        <result column="poi_name" property="poiName"/>
+        <result column="is_top" property="isTop"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+
+        <!-- 用户信息 -->
+        <association property="user" javaType="com.xiaoyua.vo.user.UserSimpleVO">
+            <id column="user_id" property="id"/>
+            <result column="user_nickname" property="nickname"/>
+            <result column="user_avatar_url" property="avatarUrl"/>
+            <result column="user_gender" property="gender"/>
+            <result column="user_campus_id" property="campusId"/>
+            <result column="user_is_real_name" property="isRealName"/>
+            <result column="user_created_at" property="createdAt"/>
+        </association>
+
+        <!-- 统计信息 -->
+        <association property="stats" javaType="com.xiaoyua.vo.post.PostStatsVO">
+            <result column="view_cnt" property="viewCnt"/>
+            <result column="like_cnt" property="likeCnt"/>
+            <result column="fav_cnt" property="favCnt"/>
+            <result column="comment_cnt" property="commentCnt"/>
+            <result column="share_cnt" property="shareCnt"/>
+        </association>
+
+        <!-- 用户操作状态 -->
+        <association property="userActions" javaType="com.xiaoyua.vo.post.PostUserActionsVO">
+            <result column="is_liked" property="isLiked"/>
+            <result column="is_favorited" property="isFavorited"/>
+        </association>
+    </resultMap>
+
+    <!-- 分页查询动态列表（联表查询用户信息、统计数据、用户操作状态） -->
+    <select id="selectPostsWithDetails" resultMap="PostVOMap">
+        SELECT
+        p.id,
+        p.title,
+        p.content,
+        p.campus_id,
+        p.visibility,
+        p.poi_name,
+        p.is_top,
+        p.status,
+        p.created_at,
+        p.updated_at,
+
+        -- 用户信息
+        u.id as user_id,
+        u.nickname as user_nickname,
+        u.avatar_url as user_avatar_url,
+        u.gender as user_gender,
+        u.campus_id as user_campus_id,
+        u.is_real_name as user_is_real_name,
+        u.created_at as user_created_at,
+
+        -- 统计信息
+        COALESCE(s.view_cnt, 0) as view_cnt,
+        COALESCE(s.like_cnt, 0) as like_cnt,
+        COALESCE(s.fav_cnt, 0) as fav_cnt,
+        COALESCE(s.comment_cnt, 0) as comment_cnt,
+        COALESCE(s.share_cnt, 0) as share_cnt,
+
+        -- 当前用户操作状态
+        CASE WHEN user_like.user_id IS NOT NULL THEN true ELSE false END as is_liked,
+        CASE WHEN user_fav.user_id IS NOT NULL THEN true ELSE false END as is_favorited
+
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        LEFT JOIN post_stats s ON p.id = s.post_id
+
+        -- 当前用户点赞状态（始终JOIN，但条件性过滤）
+        LEFT JOIN likes user_like ON p.id = user_like.item_id
+        AND user_like.item_type = 'POST'
+        <if test="currentUserId != null">
+            AND user_like.user_id = #{currentUserId}
+        </if>
+        <if test="currentUserId == null">
+            AND 1 = 0
+        </if>
+
+        -- 当前用户收藏状态（始终JOIN，但条件性过滤）
+        LEFT JOIN favorites user_fav ON p.id = user_fav.item_id
+        AND user_fav.item_type = 'POST'
+        <if test="currentUserId != null">
+            AND user_fav.user_id = #{currentUserId}
+        </if>
+        <if test="currentUserId == null">
+            AND 1 = 0
+        </if>
+
+        WHERE p.status = 'PUBLISHED'
+        ORDER BY p.created_at DESC
+    </select>
+
+    <!-- 批量查询动态详情（联表查询用户信息、统计数据、用户操作状态） -->
+    <select id="selectPostsWithDetailsByIds" resultMap="PostVOMap">
+        SELECT
+        p.id,
+        p.title,
+        p.content,
+        p.campus_id,
+        p.visibility,
+        p.poi_name,
+        p.is_top,
+        p.status,
+        p.created_at,
+        p.updated_at,
+
+        -- 用户信息
+        u.id as user_id,
+        u.nickname as user_nickname,
+        u.avatar_url as user_avatar_url,
+        u.gender as user_gender,
+        u.campus_id as user_campus_id,
+        u.is_real_name as user_is_real_name,
+        u.created_at as user_created_at,
+
+        -- 统计信息
+        COALESCE(s.view_cnt, 0) as view_cnt,
+        COALESCE(s.like_cnt, 0) as like_cnt,
+        COALESCE(s.fav_cnt, 0) as fav_cnt,
+        COALESCE(s.comment_cnt, 0) as comment_cnt,
+        COALESCE(s.share_cnt, 0) as share_cnt,
+
+        -- 当前用户操作状态
+        CASE WHEN user_like.user_id IS NOT NULL THEN true ELSE false END as is_liked,
+        CASE WHEN user_fav.user_id IS NOT NULL THEN true ELSE false END as is_favorited
+
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        LEFT JOIN post_stats s ON p.id = s.post_id
+
+        -- 当前用户点赞状态（始终JOIN，但条件性过滤）
+        LEFT JOIN likes user_like ON p.id = user_like.item_id
+        AND user_like.item_type = 'POST'
+        <if test="currentUserId != null">
+            AND user_like.user_id = #{currentUserId}
+        </if>
+        <if test="currentUserId == null">
+            AND 1 = 0
+        </if>
+
+        -- 当前用户收藏状态（始终JOIN，但条件性过滤）
+        LEFT JOIN favorites user_fav ON p.id = user_fav.item_id
+        AND user_fav.item_type = 'POST'
+        <if test="currentUserId != null">
+            AND user_fav.user_id = #{currentUserId}
+        </if>
+        <if test="currentUserId == null">
+            AND 1 = 0
+        </if>
+
+        WHERE p.id IN
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+        ORDER BY p.created_at DESC
+    </select>
+
+</mapper>

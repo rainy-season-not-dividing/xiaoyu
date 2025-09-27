@@ -1,12 +1,14 @@
 package com.xiaoyua.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import lombok.Builder;
 import lombok.Data;
 
 /**
  * 话题-动态关联表
  */
 @Data
+@Builder
 @TableName("topic_posts")
 public class TopicPostPO {
 

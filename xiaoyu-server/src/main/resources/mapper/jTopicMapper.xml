@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaoyua.mapper.jTopicMapper">
+
+    <!-- PostVO结果映射 -->
+    <resultMap id="PostVOMap" type="com.xiaoyua.vo.post.PostVO">
+        <!-- 动态基本信息 -->
+        <id column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="content" property="content"/>
+        <result column="campus_id" property="campusId"/>
+        <result column="visibility" property="visibility"/>
+        <result column="poi_name" property="poiName"/>
+        <result column="is_top" property="isTop"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+
+        <!-- 用户信息 -->
+        <association property="user" javaType="com.xiaoyua.vo.user.UserSimpleVO">
+            <id column="user_id" property="id"/>
+            <result column="user_nickname" property="nickname"/>
+            <result column="user_avatar_url" property="avatarUrl"/>
+            <result column="user_gender" property="gender"/>
+            <result column="user_campus_id" property="campusId"/>
+            <result column="user_is_real_name" property="isRealName"/>
+            <result column="user_created_at" property="createdAt"/>
+        </association>
+
+        <!-- 统计信息 -->
+        <association property="stats" javaType="com.xiaoyua.vo.post.PostStatsVO">
+            <result column="view_count" property="viewCnt"/>
+            <result column="like_count" property="likeCnt"/>
+            <result column="comment_count" property="commentCnt"/>
+            <result column="share_count" property="shareCnt"/>
+            <result column="fav_count" property="favCnt"/>
+        </association>
+
+        <!-- 用户操作状态 -->
+        <association property="userActions" javaType="com.xiaoyua.vo.post.PostUserActionsVO">
+            <result column="is_liked" property="isLiked"/>
+            <result column="is_favorited" property="isFavorited"/>
+        </association>
+    </resultMap>
+
+    <!-- 分页查询话题下的动态列表（联表查询用户信息和统计数据） -->
+    <select id="selectPostsByTopicIdWithDetails" resultMap="PostVOMap">
+        SELECT
+        p.id,
+        p.title,
+        p.content,
+        p.campus_id,
+        p.visibility,
+        p.poi_name,
+        p.is_top,
+        p.status,
+        p.created_at,
+
+        -- 用户信息
+        u.id as user_id,
+        u.nickname as user_nickname,
+        u.avatar_url as user_avatar_url,
+        u.gender as user_gender,
+        u.campus_id as user_campus_id,
+        u.is_real_name as user_is_real_name,
+        u.created_at as user_created_at,
+
+        -- 统计信息（从post_stats表获取）
+        COALESCE(ps.view_cnt, 0) as view_cnt,
+        COALESCE(ps.like_cnt, 0) as like_cnt,
+        COALESCE(ps.comment_cnt, 0) as comment_cnt,
+        COALESCE(ps.share_cnt, 0) as share_cnt,
+        COALESCE(ps.fav_cnt, 0) as fav_cnt,
+
+        -- 用户操作状态
+        CASE WHEN user_like.item_id IS NOT NULL THEN true ELSE false END AS is_liked,
+        CASE WHEN user_fav.item_id  IS NOT NULL THEN true ELSE false END AS is_favorited
+
+        FROM posts p
+        INNER JOIN topic_posts tp ON p.id = tp.post_id
+        LEFT JOIN users u ON p.user_id = u.id
+        LEFT JOIN post_stats ps ON p.id = ps.post_id
+
+        -- 当前用户点赞状态
+        <if test="currentUserId != null">
+            LEFT JOIN likes user_like ON p.id = user_like.item_id
+            AND user_like.item_type = 'POST'
+            AND user_like.user_id = #{currentUserId}
+        </if>
+
+        -- 当前用户收藏状态
+        <if test="currentUserId != null">
+            LEFT JOIN favorites user_fav ON p.id = user_fav.item_id
+            AND user_fav.item_type = 'POST'
+            AND user_fav.user_id = #{currentUserId}
+        </if>
+
+        WHERE tp.topic_id = #{topicId}
+        AND p.status = 'PUBLISHED'
+
+        <choose>
+            <when test="sort == 'hot'">
+                ORDER BY COALESCE(ps.like_cnt, 0) DESC, p.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY p.created_at DESC
+            </otherwise>
+        </choose>
+    </select>
+
+</mapper>

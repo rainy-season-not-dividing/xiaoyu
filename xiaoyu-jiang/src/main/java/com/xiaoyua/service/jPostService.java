@@ -12,7 +12,7 @@ import java.util.List;
 public interface jPostService {
     /**
      * 获取动态列表
-     * 
+     *
      * @param postQueryDTO 查询条件
      * @return 分页结果
      */
@@ -20,7 +20,7 @@ public interface jPostService {
 
     /**
      * 获取动态详情
-     * 
+     *
      * @param postId 动态ID
      * @return 动态详情
      */
@@ -28,7 +28,7 @@ public interface jPostService {
 
     /**
      * 更新动态
-     * 
+     *
      * @param postUpdateDTO
      * @param postId
      */
@@ -76,4 +76,17 @@ public interface jPostService {
      * @param postId
      */
     void deletePost(Long postId);
+
+    /**
+     * 获取我的喜欢动态
+     *
+     */
+    PageResult<PostVO> listLike(Integer page, Integer size, String sort);
+
+    /**
+     * 获取我的收藏动态
+     *
+     */
+    PageResult<PostVO> listFavorite(Integer page, Integer size, String sort);
+
 }

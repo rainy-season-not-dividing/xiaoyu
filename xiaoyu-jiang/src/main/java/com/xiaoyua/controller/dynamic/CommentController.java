@@ -20,6 +20,7 @@ import com.xiaoyua.common.enums.TargetType;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/comments")
@@ -34,13 +35,13 @@ public class CommentController {
     private jCommentService jCommentService;
     @PostMapping("/{post_id}")
     @Operation(summary = "发表评论", description = "对动态发表评论")
-    public Result addComment(
+    public Result<CommentVO> addComment(
             @Parameter(description = "动态ID") @PathVariable("post_id") Long postId,
             @RequestBody @Valid CommentCreateDTO comment){
         log.info("addComment postId={}, comment={}", postId, comment);
         comment.setPostId(postId); // 确保设置正确的postId
-        jCommentService.addComment(comment);
-        return Result.success("评论成功");
+        CommentVO commentVO = jCommentService.addComment(comment);
+        return Result.success("评论成功", commentVO);
     }
 
     @DeleteMapping("/{comment_id}")
@@ -71,7 +72,8 @@ public class CommentController {
         Long userId = BaseContext.getCurrentId();
         log.info("likeComment commentId={}, userId={}", commentId, userId);
         jLikeService.addLike(commentId, userId, TargetType.COMMENT);
-        return Result.success("点赞成功");
+        long likeCount = jLikeService.getLikeCount(commentId, TargetType.COMMENT);
+        return Result.success("点赞成功",Map.of("like_cnt",likeCount));
     }
 
     @DeleteMapping("/{comment_id}/like")
@@ -81,6 +83,7 @@ public class CommentController {
         Long userId = BaseContext.getCurrentId();
         log.info("unlikeComment commentId={}, userId={}", commentId, userId);
         jLikeService.deleteLike(commentId, userId, TargetType.COMMENT);
-        return Result.success("取消点赞成功");
+        long likeCount = jLikeService.getLikeCount(commentId, TargetType.COMMENT);
+        return Result.success("取消点赞成功", Map.of("like_cnt",likeCount));
     }
 }

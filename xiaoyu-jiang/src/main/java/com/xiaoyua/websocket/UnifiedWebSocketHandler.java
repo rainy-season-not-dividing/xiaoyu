@@ -52,9 +52,9 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
             USER_SESSIONS.put(userId, session);
             // 在Redis中标记用户在线，设置30分钟过期时间
             redisTemplate.opsForValue().set("user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
-
-            // 处理用户上线事件，推送离线消息
-            userOnlineEventHandler.handleUserOnline(userId);
+//
+//            // 处理用户上线事件，推送离线消息
+//            userOnlineEventHandler.handleUserOnline(userId);
 
             // 发送连接成功确认
             Map<String, Object> confirmMessage = Map.of(

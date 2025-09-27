@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaoyua.common.constant.PostConstant;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.post.PostCreateDTO;
+import com.xiaoyua.dto.post.PostFileDTO;
 import com.xiaoyua.dto.post.PostQueryDTO;
 import com.xiaoyua.dto.post.PostUpdateDTO;
+import com.xiaoyua.dto.post.TopicSimpleDTO;
 import com.xiaoyua.entity.*;
 import com.xiaoyua.mapper.*;
 import com.xiaoyua.es.yujiPostSearchRepository;
@@ -35,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,7 +69,7 @@ public class jPostServiceImpl implements jPostService {
     private final jTopicMapper topicMapper;
     private final jPostFileServiceImpl postFileService;
     private final jFileService fileService;
-    private final RedisTemplate<String ,Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -117,22 +121,25 @@ public class jPostServiceImpl implements jPostService {
 
         // 关联文件（如果有）
         if (postCreateDTO.getFileIds() != null && !postCreateDTO.getFileIds().isEmpty()) {
+            List<PostFilePO> postFileList = new ArrayList<>();
             int sort = 0;
             for (Long fileId : postCreateDTO.getFileIds()) {
                 PostFilePO rel = new PostFilePO();
                 rel.setPostId(post.getId());
                 rel.setFileId(fileId);
                 rel.setSort(sort++);
-                postFileMapper.insert(rel);
+                postFileList.add(rel);
             }
+            postFileService.saveBatch(postFileList);
         }
-        if(postCreateDTO.getTopicIds() != null && !postCreateDTO.getTopicIds().isEmpty()){
-            for (Long topicId : postCreateDTO.getTopicIds()) {
-                TopicPostPO rel = new TopicPostPO();
-                rel.setPostId(post.getId());
-                rel.setTopicId(topicId);
-                topicPostMapper.insert(rel);
-            }
+        if (postCreateDTO.getTopicIds() != null && !postCreateDTO.getTopicIds().isEmpty()) {
+            List<TopicPostPO> topicPostList = postCreateDTO.getTopicIds().stream()
+                    .map(topicId -> TopicPostPO.builder()
+                            .postId(post.getId())
+                            .topicId(topicId)
+                            .build())
+                    .collect(Collectors.toList());
+            topicPostMapper.saveBatch(topicPostList);
         }
         // 返回详情或概要，这里复用现有转换
         return getPostDetail(post.getId());
@@ -145,47 +152,32 @@ public class jPostServiceImpl implements jPostService {
         if (pageSize == null || pageSize < 1)
             pageSize = 20;
 
-        QueryWrapper<PostPO> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("status", "PUBLISHED");
-
         Long currentUserId = BaseContext.getCurrentId();
-        if (currentUserId == null) {
-            // 未登录仅公开
-            queryWrapper.eq("visibility", "PUBLIC");
-        } else {
-            // 登录：公开/好友/校园（简化：用 OR 组合；严格权限在详情或后续增强）
-            queryWrapper.and(w -> w.eq("visibility", "PUBLIC")
-                    .or().eq("visibility", "FRIEND")
-                    .or().eq("visibility", "CAMPUS"));
-        }
 
-        if ("hot".equalsIgnoreCase(sort)) {
-            queryWrapper.orderByDesc("like_cnt", "comment_cnt", "created_at");
-        } else {
-            queryWrapper.orderByDesc("is_top", "created_at");
-        }
+        // 使用优化的联表查询替代原有的N+1查询
+        Page<PostVO> page = new Page<>(pageNum, pageSize);
+        IPage<PostVO> postVOPage = postMapper.selectPostsWithDetails(page, currentUserId);
 
-        Page<PostPO> page = new Page<>(pageNum, pageSize);
-        IPage<PostPO> postPage = postMapper.selectPage(page, queryWrapper);
-        List<PostVO> vos = postPage.getRecords().stream().map(this::convertToVO)
-                .collect(java.util.stream.Collectors.toList());
-
+        // 批量处理文件和话题等关联数据，提升性能
+        List<PostVO> vos = postVOPage.getRecords();
+        batchFillPostRelatedData(vos);
 
         // todo: 模拟数据加入es中(正式测试时要删除)
-//        List<PostSearchVO> searchVOs = vos.stream().map(
-//                postVO->{
-//                    PostSearchVO searchVO = new PostSearchVO();
-//                    searchVO.setId(postVO.getId());
-//                    searchVO.setTitle(postVO.getTitle());
-//                    searchVO.setContent(postVO.getContent());
-//                    searchVO.setCreatedAt(postVO.getCreatedAt());
-//                    searchVO.setUser(new PostSearchVO.UserVO(postVO.getUser().getId(), postVO.getUser().getNickname(), postVO.getUser().getAvatarUrl()));
-//                    return searchVO;
-//                }
-//        ).toList();
-//        repository.saveAll(searchVOs);
+         List<PostSearchVO> searchVOs = vos.stream().map(
+                 postVO -> {
+         PostSearchVO searchVO = new PostSearchVO();
+         searchVO.setId(postVO.getId());
+         searchVO.setTitle(postVO.getTitle());
+         searchVO.setContent(postVO.getContent());
+         searchVO.setCreatedAt(postVO.getCreatedAt());
+         searchVO.setUser(new PostSearchVO.UserVO(postVO.getUser().getId(),
+         postVO.getUser().getNickname(), postVO.getUser().getAvatarUrl()));
+         return searchVO;
+         }
+         ).toList();
+         repository.saveAll(searchVOs);
 
-        return PageResult.of(vos, pageNum, pageSize, postPage.getTotal());
+        return PageResult.of(vos, pageNum, pageSize, postVOPage.getTotal());
     }
 
     @Override
@@ -238,36 +230,63 @@ public class jPostServiceImpl implements jPostService {
             queryWrapper.orderByDesc("is_top", "created_at");
         }
 
-        Page<PostPO> page = new Page<>(pageNum, pageSize);
-        IPage<PostPO> postPage = postMapper.selectPage(page, queryWrapper);
-        List<PostVO> vos = postPage.getRecords().stream().map(this::convertToVO)
-                .collect(java.util.stream.Collectors.toList());
-        return PageResult.of(vos, pageNum, pageSize, postPage.getTotal());
+        // 使用优化的联表查询替代N+1查询
+        Page<PostVO> page = new Page<>(pageNum, pageSize);
+        IPage<PostVO> postVOPage = postMapper.selectPostsWithDetails(page, viewerId);
+
+        // 批量处理文件和话题等关联数据
+        List<PostVO> vos = postVOPage.getRecords();
+        batchFillPostRelatedData(vos);
+        return PageResult.of(vos, pageNum, pageSize, postVOPage.getTotal());
     }
 
     @Override
-    public java.util.List<PostVO> listHot(Integer limit) {
+    public List<PostVO> listHot(Integer limit) {
         int topN = (limit == null || limit <= 0) ? 10 : limit;
+
+        // 获取当前用户ID
+        Long currentUserId = null;
+        try {
+            currentUserId = BaseContext.getCurrentId();
+        } catch (Exception ignored) {
+        }
+
+        // 先查询热门动态ID列表
         java.util.List<PostPO> list = postMapper.selectHotPosts(topN);
-        return list.stream().map(this::convertToVO).collect(java.util.stream.Collectors.toList());
+        List<Long> postIds = list.stream().map(PostPO::getId).collect(Collectors.toList());
+
+        if (postIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 使用联表查询获取完整数据
+        List<PostVO> vos = postMapper.selectPostsWithDetailsByIds(postIds, currentUserId);
+
+        // 批量处理文件和话题等关联数据
+        batchFillPostRelatedData(vos);
+
+        return vos;
     }
 
     @Override
     public PageResult<PostVO> getPosts(PostQueryDTO postQueryDTO) {
-        // 构建查询条件
-        QueryWrapper<PostPO> queryWrapper = buildQueryWrapper(postQueryDTO);
-        // 创建分页对象
-        Page<PostPO> page = new Page<>(postQueryDTO.getPage(), postQueryDTO.getSize());
+        // 获取当前用户ID
+        Long currentUserId = null;
+        try {
+            currentUserId = BaseContext.getCurrentId();
+        } catch (Exception ignored) {
+        }
 
-        // 执行分页查询
-        IPage<PostPO> postPage = postMapper.selectPage(page, queryWrapper);
+        // 使用优化的联表查询替代N+1查询
+        Page<PostVO> voPage = new Page<>(postQueryDTO.getPage(), postQueryDTO.getSize());
+        IPage<PostVO> postVOPage = postMapper.selectPostsWithDetails(voPage, currentUserId);
 
-        // 转换为VO并填充用户操作状态
-        List<PostVO> postVOList = postPage.getRecords().stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
+        // 批量处理文件和话题等关联数据
+        List<PostVO> postVOList = postVOPage.getRecords();
+        batchFillPostRelatedData(postVOList);
+
         // 返回分页结果
-        return PageResult.of(postVOList, postQueryDTO.getPage(), postQueryDTO.getSize(), postPage.getTotal());
+        return PageResult.of(postVOList, postQueryDTO.getPage(), postQueryDTO.getSize(), postVOPage.getTotal());
     }
 
     @Override
@@ -292,10 +311,22 @@ public class jPostServiceImpl implements jPostService {
         }
 
         // 增加浏览量
-        try { postStatMapper.incView(postId); } catch (Exception ignored) {}
+        try {
+            postStatMapper.incView(postId);
+        } catch (Exception ignored) {
+        }
 
-        // 转换为VO并返回（包含最新统计）
-        return convertToVO(postPO);
+        // 使用联表查询获取完整数据（包含最新统计）
+        List<PostVO> vos = postMapper.selectPostsWithDetailsByIds(Arrays.asList(postId), currentUserId);
+        if (vos.isEmpty()) {
+            throw new RuntimeException("动态数据获取失败");
+        }
+
+        PostVO postVO = vos.get(0);
+        // 批量处理文件和话题等关联数据（单个动态也使用批量方法）
+        batchFillPostRelatedData(Arrays.asList(postVO));
+
+        return postVO;
     }
 
     @Override
@@ -304,65 +335,19 @@ public class jPostServiceImpl implements jPostService {
         if (postPO == null) {
             throw new RuntimeException("动态不存在");
         }
-//        if (!"PUBLISHED".equals(postPO.getStatus().name())) {
-//            throw new RuntimeException("动态不可删除");
-//        }
+        // if (!"PUBLISHED".equals(postPO.getStatus().name())) {
+        // throw new RuntimeException("动态不可删除");
+        // }
         postMapper.deleteById(postId);
         topicPostMapper.delete(new QueryWrapper<TopicPostPO>().eq("post_id", postId));
         postFileMapper.delete(new QueryWrapper<PostFilePO>().eq("post_id", postId));
         Long userId = BaseContext.getCurrentId();
-        likeService.deleteLike(postId, userId,"POST");
+        likeService.deleteLike(postId, userId, "POST");
         favService.deleteFavorite(postId, userId);
 
         // todo: 删除缓存
         redisTemplate.delete(PostConstant.POST_DETAIL_KEY_PREFIX + postId);
-        return ;
-    }
-
-    /**
-     * 构建查询条件
-     */
-    private QueryWrapper<PostPO> buildQueryWrapper(PostQueryDTO postQueryDTO) {
-        QueryWrapper<PostPO> queryWrapper = new QueryWrapper<>();
-
-        // 只查询已发布的动态
-        queryWrapper.eq("status", "PUBLISHED");
-
-        // 根据查询类型添加条件
-        String type = postQueryDTO.getType();
-        if ("user".equals(type) && postQueryDTO.getUserId() != null) {
-            // 查询指定用户的动态
-            queryWrapper.eq("user_id", postQueryDTO.getUserId());
-        } else if ("campus".equals(type) && postQueryDTO.getCampusId() != null) {
-            // 查询指定校园的动态
-            queryWrapper.eq("campus_id", postQueryDTO.getCampusId());
-        } else if ("timeline".equals(type)) {
-            // 时间线：查询当前用户可见的动态（公开 + 好友 + 校园）
-            Long currentUserId = BaseContext.getCurrentId();
-            if (currentUserId != null) {
-                queryWrapper.and(wrapper -> wrapper
-                        .eq("visibility", "PUBLIC")
-                        .or().eq("visibility", "FRIEND") // 这里应该结合好友关系表查询
-                        .or().eq("visibility", "CAMPUS") // 这里应该结合校园关系查询
-                );
-            } else {
-                // 未登录用户
-                queryWrapper.eq("visibility", "PUBLIC");
-            }
-        } else {
-            queryWrapper.eq("visibility", "PUBLIC");
-        }
-
-        // 排序
-        if ("hot".equals(postQueryDTO.getSort())) {
-            // 热门排序：按点赞数、评论数、创建时间综合排序
-            queryWrapper.orderByDesc("like_cnt", "comment_cnt", "created_at");
-        } else {
-            // 最新排序：按创建时间倒序，置顶优先
-            queryWrapper.orderByDesc("is_top", "created_at");
-        }
-
-        return queryWrapper;
+        return;
     }
 
     /**
@@ -407,132 +392,6 @@ public class jPostServiceImpl implements jPostService {
     }
 
     /**
-     * 转换为VO对象
-     */
-    private PostVO convertToVO(PostPO postPO) {
-        PostVO postVO = new PostVO();
-        postVO.setId(postPO.getId());
-        postVO.setTitle(postPO.getTitle());
-        postVO.setContent(postPO.getContent());
-        postVO.setCampusId(postPO.getCampusId());
-        postVO.setVisibility(postPO.getVisibility().name());
-        postVO.setPoiName(postPO.getPoiName());
-        postVO.setIsTop(postPO.getIsTop());
-        postVO.setStatus(postPO.getStatus().name());
-        postVO.setCreatedAt(postPO.getCreatedAt());
-        postVO.setUpdatedAt(postPO.getUpdatedAt());
-
-        // 填充用户信息这里需要根据userId查询用户信息
-        // TODO: 实现用户信息查询和转换
-        UserPO userPO = userMapper.selectById(postPO.getUserId());
-        if (userPO != null) {
-            UserSimpleVO u = new UserSimpleVO();
-            u.setId(userPO.getId());
-            u.setNickname(userPO.getNickname());
-            u.setAvatarUrl(userPO.getAvatarUrl());
-            u.setGender(userPO.getGender());
-            u.setCampusId(userPO.getCampusId());
-            u.setIsRealName(userPO.getIsRealName());
-            u.setCreatedAt(userPO.getCreatedAt());
-            postVO.setUser(u);
-        }
-
-
-        // 填充统计信息（来自 post_stats）
-        PostStatsVO stats = new PostStatsVO();
-        try {
-            PostStatPO statPO = postStatMapper.selectById(postPO.getId());
-            if (statPO != null) {
-                stats.setViewCnt(statPO.getViewCnt());
-                stats.setLikeCnt(statPO.getLikeCnt());
-                stats.setFavCnt(statPO.getFavCnt());
-                stats.setCommentCnt(statPO.getCommentCnt());
-                stats.setShareCnt(statPO.getShareCnt());
-            } else {
-                stats.setViewCnt(0);
-                stats.setLikeCnt(0);
-                stats.setFavCnt(0);
-                stats.setCommentCnt(0);
-                stats.setShareCnt(0);
-            }
-        } catch (Exception e) {
-            stats.setViewCnt(0);
-            stats.setLikeCnt(0);
-            stats.setFavCnt(0);
-            stats.setCommentCnt(0);
-            stats.setShareCnt(0);
-        }
-        postVO.setStats(stats);
-
-        // 填充当前用户的操作状态
-        Long currentUserId = BaseContext.getCurrentId();
-        if (currentUserId != null) {
-            PostUserActionsVO userActions = new PostUserActionsVO();
-            // // 暂时设置默认值，等待服务接口方法确认
-            // userActions.setIsLiked(false);
-            // userActions.setIsFavorited(false);
-            // TODO: 实现用户操作状态查询
-            userActions.setIsLiked(likeService.isLiked(postPO.getId(), currentUserId, "POST"));
-            userActions.setIsFavorited(favService.isFavorited(postPO.getId(), currentUserId, "POST"));
-            postVO.setUserActions(userActions);
-        }
-
-        // TODO: 填充文件列表、话题等关联数据
-        // 填充文件列表、话题等关联数据
-        try {
-            // 文件：post_files -> files
-            QueryWrapper<PostFilePO> pfw = new QueryWrapper<>();
-            pfw.eq("post_id", postPO.getId()).orderByAsc("sort");
-            List<PostFilePO> relations = postFileMapper.selectList(pfw);
-            if (relations != null && !relations.isEmpty()) {
-                List<Long> fileIds = relations.stream().map(PostFilePO::getFileId).collect(Collectors.toList());
-                if (!fileIds.isEmpty()) {
-                    List<FilePO> files = fileMapper.selectBatchIds(fileIds);
-                    // 保持与关系表的顺序一致
-                    Map<Long, FilePO> fileMap = files.stream().filter(Objects::nonNull)
-                            .collect(Collectors.toMap(FilePO::getId, f -> f));
-                    List<FileSimpleVO> fileVOs = relations.stream()
-                            .map(rel -> fileMap.get(rel.getFileId()))
-                            .filter(Objects::nonNull)
-                            .map(this::convertToFileSimpleVO)
-                            .collect(Collectors.toList());
-                    postVO.setFiles(fileVOs);
-                } else {
-                    postVO.setFiles(new ArrayList<>());
-                }
-            } else {
-                postVO.setFiles(new ArrayList<>());
-            }
-        } catch (Exception ignored) {}
-
-        try {
-            // 话题：topic_posts -> topics
-            QueryWrapper<TopicPostPO> tpw = new QueryWrapper<>();
-            tpw.eq("post_id", postPO.getId());
-            List<TopicPostPO> topicRels = topicPostMapper.selectList(tpw);
-            if (topicRels != null && !topicRels.isEmpty()) {
-                List<Long> topicIds = topicRels.stream().map(TopicPostPO::getTopicId).collect(Collectors.toList());
-                if (!topicIds.isEmpty()) {
-                    List<TopicPO> topics = topicMapper.selectBatchIds(topicIds);
-                    List<TopicSimpleVO> topicVOs = topics.stream()
-                            .filter(Objects::nonNull)
-                            .map(this::convertToTopicSimpleVO)
-                            .collect(Collectors.toList());
-                    postVO.setTopics(topicVOs);
-
-                } else {
-                    postVO.setTopics(new ArrayList<>());
-                }
-            } else {
-                postVO.setTopics(new ArrayList<>());
-            }
-        } catch (Exception ignored) {}
-
-
-        return postVO;
-    }
-
-    /**
      * 更新动态
      *
      * @param postUpdateDTO
@@ -562,14 +421,13 @@ public class jPostServiceImpl implements jPostService {
 
         // 删除文件
         // postFileMapper根据taskId批量删除
-        postFileMapper.delete(new LambdaQueryWrapper<PostFilePO>().eq(PostFilePO::getPostId,postId));
+        postFileMapper.delete(new LambdaQueryWrapper<PostFilePO>().eq(PostFilePO::getPostId, postId));
+        topicPostMapper.delete(new LambdaQueryWrapper<TopicPostPO>().eq(TopicPostPO::getPostId, postId));
         // 更新文件
 
         // filemapper 批量添加
-        Long currentId = BaseContext.getCurrentId();
         List<FilePO> fileList = postUpdateDTO.getFiles().stream().map(
-                fileUrl -> FilePO.builder().userId(postId).fileUrl(fileUrl).build()
-        ).toList();
+                fileUrl -> FilePO.builder().userId(postId).fileUrl(fileUrl).build()).toList();
         // 插入文件表
         fileService.saveBatch(fileList);
         List<Long> fileIds = fileList.stream().map(FilePO::getId).toList();
@@ -579,18 +437,28 @@ public class jPostServiceImpl implements jPostService {
         // 插入文件-动态表
         postFileService.saveBatch(taskFilesPOList);
 
+        // 更新话题关联
+        if (postUpdateDTO.getTopicIds() != null && !postUpdateDTO.getTopicIds().isEmpty()) {
+            List<TopicPostPO> topicPostPOList = postUpdateDTO.getTopicIds().stream()
+                    .map(topicId -> TopicPostPO.builder()
+                            .postId(postId)
+                            .topicId(topicId)
+                            .build())
+                    .collect(Collectors.toList());
+            topicPostMapper.saveBatch(topicPostPOList);
+        }
         // 关联文件（如果有）
-//        if (postUpdateDTO.getFiles() != null && !postUpdateDTO.getFileIds().isEmpty()) {
-//            int sort = 0;
-//            for (Long fileId : postCreateDTO.getFileIds()) {
-//                PostFilePO rel = new PostFilePO();
-//                rel.setPostId(post.getId());
-//                rel.setFileId(fileId);
-//                rel.setSort(sort++);
-//                postFileMapper.insert(rel);
-//            }
-//        }
-
+        // if (postUpdateDTO.getFiles() != null &&
+        // !postUpdateDTO.getFileIds().isEmpty()) {
+        // int sort = 0;
+        // for (Long fileId : postCreateDTO.getFileIds()) {
+        // PostFilePO rel = new PostFilePO();
+        // rel.setPostId(post.getId());
+        // rel.setFileId(fileId);
+        // rel.setSort(sort++);
+        // postFileMapper.insert(rel);
+        // }
+        // }
 
         // 更新后写入es
         PostSearchVO postSearchVO = new PostSearchVO();
@@ -616,39 +484,190 @@ public class jPostServiceImpl implements jPostService {
         return new PageResult<>(pageRes.getContent(), page, size, pageRes.getTotalElements());
     }
 
-    /** 辅助：UserVO -> UserSimpleVO */
-    private UserSimpleVO convertToUserSimpleVO(UserVO user) {
-        if (user == null) return null;
-        UserSimpleVO vo = new UserSimpleVO();
-        vo.setId(user.getId());
-        vo.setNickname(user.getNickname());
-        vo.setAvatarUrl(user.getAvatarUrl());
-        vo.setGender(user.getGender());
-        vo.setCampusId(user.getCampusId());
-        vo.setIsRealName(user.getIsRealName());
-        vo.setCreatedAt(user.getCreatedAt());
-        return vo;
+    @Override
+    public PageResult<PostVO> listLike(Integer pageNum, Integer pageSize, String sort) {
+        if (pageNum == null || pageNum < 1)
+            pageNum = 1;
+        if (pageSize == null || pageSize < 1)
+            pageSize = 20;
+
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId == null) {
+            throw new RuntimeException("用户未登录");
+        }
+
+        int offset = (pageNum - 1) * pageSize;
+
+        // 查询用户点赞的动态列表
+        List<PostPO> posts = postMapper.selectLikedPostsByUser(currentUserId, offset, pageSize, sort);
+        List<Long> postIds = posts.stream().map(PostPO::getId).collect(Collectors.toList());
+
+        List<PostVO> vos = new ArrayList<>();
+        if (!postIds.isEmpty()) {
+            // 使用联表查询获取完整数据
+            vos = postMapper.selectPostsWithDetailsByIds(postIds, currentUserId);
+
+            // 批量处理文件和话题等关联数据
+            batchFillPostRelatedData(vos);
+        }
+
+        // 查询总数
+        long total = postMapper.countLikedPostsByUser(currentUserId);
+
+        return PageResult.of(vos, pageNum, pageSize, total);
     }
 
-    /** 辅助：FilePO -> FileSimpleVO */
-    private FileSimpleVO convertToFileSimpleVO(FilePO f) {
-        if (f == null) return null;
+    @Override
+    public PageResult<PostVO> listFavorite(Integer pageNum, Integer pageSize, String sort) {
+        if (pageNum == null || pageNum < 1)
+            pageNum = 1;
+        if (pageSize == null || pageSize < 1)
+            pageSize = 20;
+
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId == null) {
+            throw new RuntimeException("用户未登录");
+        }
+
+        int offset = (pageNum - 1) * pageSize;
+
+        // 查询用户收藏的动态列表
+        List<PostPO> posts = postMapper.selectFavoritedPostsByUser(currentUserId, offset, pageSize, sort);
+        List<Long> postIds = posts.stream().map(PostPO::getId).collect(Collectors.toList());
+
+        List<PostVO> vos = new ArrayList<>();
+        if (!postIds.isEmpty()) {
+            // 使用联表查询获取完整数据
+            vos = postMapper.selectPostsWithDetailsByIds(postIds, currentUserId);
+
+            // 批量处理文件和话题等关联数据
+            batchFillPostRelatedData(vos);
+        }
+
+        // 查询总数
+        long total = postMapper.countFavoritedPostsByUser(currentUserId);
+
+        return PageResult.of(vos, pageNum, pageSize, total);
+    }
+
+    /**
+     * 填充动态的关联数据（文件和话题）
+     * 这些数据相对较少，保持原有的查询逻辑
+     */
+    private void fillPostRelatedData(PostVO postVO) {
+//        try {
+//            // 填充文件列表
+//            QueryWrapper<PostFilePO> pfw = new QueryWrapper<>();
+//            pfw.eq("post_id", postVO.getId()).orderByAsc("sort");
+//            List<PostFilePO> relations = postFileMapper.selectList(pfw);
+//            if (relations != null && !relations.isEmpty()) {
+//                List<Long> fileIds = relations.stream().map(PostFilePO::getFileId).collect(Collectors.toList());
+//                if (!fileIds.isEmpty()) {
+//                    List<FilePO> files = fileMapper.selectBatchIds(fileIds);
+//                    // 保持与关系表的顺序一致
+//                    Map<Long, FilePO> fileMap = files.stream().filter(Objects::nonNull)
+//                            .collect(Collectors.toMap(FilePO::getId, f -> f));
+//                    List<FileSimpleVO> fileVOs = relations.stream()
+//                            .map(rel -> fileMap.get(rel.getFileId()))
+//                            .filter(Objects::nonNull)
+//                            .map(this::convertToFileSimpleVO)
+//                            .collect(Collectors.toList());
+//                    postVO.setFiles(fileVOs);
+//                } else {
+//                    postVO.setFiles(new ArrayList<>());
+//                }
+//            } else {
+//                postVO.setFiles(new ArrayList<>());
+//            }
+//        } catch (Exception ignored) {
+//        }
+//
+//        try {
+//            // 填充话题列表
+//            QueryWrapper<TopicPostPO> tpw = new QueryWrapper<>();
+//            tpw.eq("post_id", postVO.getId());
+//            List<TopicPostPO> topicRels = topicPostMapper.selectList(tpw);
+//            if (topicRels != null && !topicRels.isEmpty()) {
+//                List<Long> topicIds = topicRels.stream().map(TopicPostPO::getTopicId).collect(Collectors.toList());
+//                if (!topicIds.isEmpty()) {
+//                    List<TopicPO> topics = topicMapper.selectBatchIds(topicIds);
+//                    List<TopicSimpleVO> topicVOs = topics.stream()
+//                            .filter(Objects::nonNull)
+//                            .map(this::convertToTopicSimpleVO)
+//                            .collect(Collectors.toList());
+//                    postVO.setTopics(topicVOs);
+//                } else {
+//                    postVO.setTopics(new ArrayList<>());
+//                }
+//            } else {
+//                postVO.setTopics(new ArrayList<>());
+//            }
+//        } catch (Exception ignored) {
+//        }
+    }
+
+    /**
+     * 批量获取动态文件映射
+     * @param postIds 动态ID列表
+     * @return postId -> 有序文件列表的映射
+     */
+    private Map<Long, List<FileSimpleVO>> batchGetFileMap(List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // 1. 批量查询文件信息（已按 sort 排序）
+        List<PostFileDTO> dtoList = postFileMapper.selectFileByPostIds(postIds);
+
+        // 2. 按 postId 分组并保持顺序
+        return dtoList.stream()
+                .collect(Collectors.groupingBy(PostFileDTO::getPostId,
+                        LinkedHashMap::new,
+                        Collectors.mapping(this::convertToFileSimpleVO, Collectors.toList())));
+    }
+
+    /**
+     * 批量获取动态话题映射
+     * @param postIds 动态ID列表
+     * @return postId -> 话题列表的映射
+     */
+    private Map<Long, List<TopicSimpleVO>> batchGetTopicMap(List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // 批量查询话题信息
+        List<TopicSimpleDTO> dtoList = topicPostMapper.selectTopicByPostIds(postIds);
+
+        // 按 postId 分组
+        return dtoList.stream()
+                .collect(Collectors.groupingBy(TopicSimpleDTO::getPostId,
+                        Collectors.mapping(this::convertToTopicSimpleVO, Collectors.toList())));
+    }
+
+    /**
+     * PostFileDTO -> FileSimpleVO 转换
+     */
+    private FileSimpleVO convertToFileSimpleVO(PostFileDTO dto) {
+        if (dto == null) return null;
+
         FileSimpleVO vo = new FileSimpleVO();
-        vo.setId(f.getId());
-        vo.setFileUrl(f.getFileUrl());
-        vo.setThumbnailUrl(f.getThumbUrl());
-        vo.setFileSize(f.getSize() == null ? 0L : f.getSize().longValue());
-        // 基于bizType粗略推断文件类型
+        vo.setId(dto.getId());
+        vo.setFileUrl(dto.getFileUrl());
+        vo.setThumbnailUrl(dto.getThumbUrl());
+        vo.setFileSize(dto.getSize() == null ? 0L : dto.getSize());
+
+        // 基于bizType推断文件类型
         String type = "DOCUMENT";
-        if (f.getBizType() != null) {
-            switch (f.getBizType()) {
-                case AVATAR:
-                case BG:
-                case POST:
+        if (dto.getBizType() != null) {
+            switch (dto.getBizType()) {
+                case "AVATAR":
+                case "BG":
+                case "POST":
                     type = "IMAGE";
                     break;
-                case TASK:
-                case COMMENT:
+                case "TASK":
+                case "COMMENT":
                     type = "DOCUMENT";
                     break;
             }
@@ -657,14 +676,45 @@ public class jPostServiceImpl implements jPostService {
         return vo;
     }
 
-    /** 辅助：TopicPO -> TopicSimpleVO */
-    private TopicSimpleVO convertToTopicSimpleVO(TopicPO t) {
-        if (t == null) return null;
+    /**
+     * TopicSimpleDTO -> TopicSimpleVO 转换
+     */
+    private TopicSimpleVO convertToTopicSimpleVO(TopicSimpleDTO dto) {
+        if (dto == null) return null;
+
         TopicSimpleVO vo = new TopicSimpleVO();
-        vo.setId(t.getId());
-        vo.setName(t.getName());
-        vo.setDescription(t.getDescription());
-        vo.setPostCount(t.getPostCnt());
+        vo.setId(dto.getId());
+        vo.setName(dto.getName());
+        vo.setDescription(dto.getDescription());
+        vo.setPostCount(dto.getPostCnt());
         return vo;
+    }
+
+    /**
+     * 批量填充动态的关联数据（文件和话题）
+     * 替代原有的单个查询方式，提升性能
+     */
+    private void batchFillPostRelatedData(List<PostVO> vos) {
+        if (vos == null || vos.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 1. 拿到当前页所有 postId
+            List<Long> postIds = vos.stream().map(PostVO::getId).collect(Collectors.toList());
+
+            // 2. 一次性查文件、话题
+            Map<Long, List<FileSimpleVO>> fileMap = batchGetFileMap(postIds);
+            Map<Long, List<TopicSimpleVO>> topicMap = batchGetTopicMap(postIds);
+
+            // 3. 内存组装
+            vos.forEach(vo -> {
+                vo.setFiles(fileMap.getOrDefault(vo.getId(), List.of()));
+                vo.setTopics(topicMap.getOrDefault(vo.getId(), List.of()));
+            });
+        } catch (Exception e) {
+            log.error("批量填充动态关联数据失败", e);
+            vos.forEach(this::fillPostRelatedData);
+        }
     }
 }

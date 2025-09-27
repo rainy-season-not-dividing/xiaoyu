@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaoyua.mapper.jCommentMapper">
+
+    <!-- 评论VO结果映射 -->
+    <resultMap id="CommentVOMap" type="com.xiaoyua.vo.comment.CommentVO">
+        <id column="id" property="id"/>
+        <result column="content" property="content"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="like_cnt" property="likeCnt"/>
+        <result column="is_liked" property="isLiked"/>
+        <result column="at_users" property="atUsersJson"/>
+
+        <!-- 用户信息 -->
+        <association property="user" javaType="com.xiaoyua.vo.user.UserSimpleVO">
+            <id column="user_id" property="id"/>
+            <result column="user_nickname" property="nickname"/>
+            <result column="user_avatar_url" property="avatarUrl"/>
+            <result column="user_gender" property="gender"/>
+            <result column="user_campus_id" property="campusId"/>
+            <result column="user_is_real_name" property="isRealName"/>
+            <result column="user_created_at" property="createdAt"/>
+        </association>
+    </resultMap>
+
+    <!-- 分页查询评论列表（联表查询用户信息和点赞状态） -->
+    <select id="selectCommentsWithDetails" resultMap="CommentVOMap">
+        SELECT
+        c.id,
+        c.content,
+        c.parent_id,
+        c.status,
+        c.created_at,
+        COALESCE(like_stats.like_count, 0) as like_cnt,
+        c.at_users,
+
+        -- 用户信息
+        u.id as user_id,
+        u.nickname as user_nickname,
+        u.avatar_url as user_avatar_url,
+        u.gender as user_gender,
+        u.campus_id as user_campus_id,
+        u.is_real_name as user_is_real_name,
+        u.created_at as user_created_at,
+
+        -- 当前用户点赞状态
+        CASE WHEN user_like.user_id IS NOT NULL THEN true ELSE false END as is_liked
+
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+
+        -- 点赞统计
+        LEFT JOIN (
+        SELECT item_id, COUNT(*) as like_count
+        FROM likes
+        WHERE item_type = 'COMMENT'
+        GROUP BY item_id
+        ) like_stats ON c.id = like_stats.item_id
+
+        -- 当前用户点赞状态（始终JOIN，但条件性过滤）
+        LEFT JOIN likes user_like ON c.id = user_like.item_id
+        AND user_like.item_type = 'COMMENT'
+        <if test="currentUserId != null">
+            AND user_like.user_id = #{currentUserId}
+        </if>
+        <if test="currentUserId == null">
+            AND 1 = 0
+        </if>
+
+        WHERE c.item_id = #{postId}
+        AND c.item_type = 'POST'
+        AND c.parent_id = 0
+        AND c.status = 'VISIBLE'
+
+        <choose>
+            <when test="sort == 'hot'">
+                ORDER BY COALESCE(like_stats.like_count, 0) DESC, c.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY c.created_at DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 批量查询二级评论（联表查询用户信息和点赞状态） -->
+    <select id="selectSubCommentsWithDetails" resultMap="CommentVOMap">
+        SELECT
+        c.id,
+        c.content,
+        c.parent_id,
+        c.status,
+        c.created_at,
+        COALESCE(like_stats.like_count, 0) as like_cnt,
+        c.at_users,
+
+        -- 用户信息
+        u.id as user_id,
+        u.nickname as user_nickname,
+        u.avatar_url as user_avatar_url,
+        u.gender as user_gender,
+        u.campus_id as user_campus_id,
+        u.is_real_name as user_is_real_name,
+        u.created_at as user_created_at,
+
+        -- 当前用户点赞状态
+        CASE WHEN user_like.user_id IS NOT NULL THEN true ELSE false END as is_liked
+
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+
+        -- 点赞统计
+        LEFT JOIN (
+        SELECT item_id, COUNT(*) as like_count
+        FROM likes
+        WHERE item_type = 'COMMENT'
+        GROUP BY item_id
+        ) like_stats ON c.id = like_stats.item_id
+
+        -- 当前用户点赞状态（始终JOIN，但条件性过滤）
+        LEFT JOIN likes user_like ON c.id = user_like.item_id
+        AND user_like.item_type = 'COMMENT'
+        <if test="currentUserId != null">
+            AND user_like.user_id = #{currentUserId}
+        </if>
+        <if test="currentUserId == null">
+            AND 1 = 0
+        </if>
+
+        WHERE c.parent_id IN
+        <foreach collection="parentIds" item="parentId" open="(" separator="," close=")">
+            #{parentId}
+        </foreach>
+        AND c.status = 'VISIBLE'
+        ORDER BY c.created_at ASC
+    </select>
+
+</mapper>

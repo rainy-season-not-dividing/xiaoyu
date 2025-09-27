@@ -1,10 +1,8 @@
 package com.xiaoyua.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,12 +11,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.comment.CommentCreateDTO;
 import com.xiaoyua.entity.CommentPO;
-import com.xiaoyua.entity.LikePO;
 import com.xiaoyua.entity.NotificationPO;
 import com.xiaoyua.entity.PostPO;
 import com.xiaoyua.entity.UserPO;
 import com.xiaoyua.mapper.jCommentMapper;
-import com.xiaoyua.mapper.jLikeMapper;
 import com.xiaoyua.mapper.jPostMapper;
 import com.xiaoyua.mapper.jPostStatMapper;
 import com.xiaoyua.mapper.jUserMapper;
@@ -42,8 +38,6 @@ public class jCommentServiceImpl implements jCommentService {
     @Autowired
     jUserMapper jUserMapper;
     @Autowired
-    jLikeMapper jLikeMapper;
-    @Autowired
     private jPostMapper jPostMapper;
     @Autowired
     private jPushService jPushService;
@@ -61,7 +55,7 @@ public class jCommentServiceImpl implements jCommentService {
         }
     }
     @Override
-    public void addComment(CommentCreateDTO comment) {
+    public CommentVO addComment(CommentCreateDTO comment) {
         CommentPO commentPO=new CommentPO();
         commentPO.setUserId(BaseContext.getCurrentId());
         commentPO.setContent(comment.getContent());
@@ -81,6 +75,12 @@ public class jCommentServiceImpl implements jCommentService {
 
         // 创建评论通知
         createCommentNotification(commentPO);
+
+        // 创建@用户通知
+        createAtUserNotifications(commentPO, comment.getAtUsers());
+
+        // 构建并返回CommentVO
+        return buildCommentVO(commentPO, comment.getAtUsers());
     }
 
     public void deleteComment(Long commentId) {
@@ -99,92 +99,76 @@ public class jCommentServiceImpl implements jCommentService {
      * 查询一篇文章的全部评论（含二级回复）
      */
     public IPage<CommentVO> getComments(Long postId, int page, int size, String sort) {
-        //先查一级评论parent_id = 0
-        IPage<CommentPO> poPage = jCommentMapper.selectPage(
-                new Page<>(page, size),
+        log.info("获取评论列表: postId={}, page={}, size={}, sort={}", postId, page, size, sort);
+
+        // 获取当前用户ID
+        Long currentUserId = null;
+        try {
+            currentUserId = BaseContext.getCurrentId();
+        } catch (Exception ignored) {}
+
+        // 使用联表查询，一次SQL获取一级评论的所有数据
+        Page<CommentVO> pageParam = new Page<>(page, size);
+        // 先用原始查询验证是否有数据
+        long totalComments = jCommentMapper.selectCount(
                 new QueryWrapper<CommentPO>()
                         .eq("item_id", postId)
-                        .eq("item_type", "POST")
-                        .eq("parent_id", 0)          // 只查根评论
-                        .orderBy(sort == null || sort.equals("latest"), false, "created_at")
-                        .orderBy("hot".equals(sort), false, "like_cnt", "created_at")
+                        .eq("item_type", CommentPO.ItemType.POST)
+                        .eq("parent_id", 0)
         );
+        log.info("数据库中该动态的一级评论总数: {}", totalComments);
 
-        //取出本页所有一级评论 id
-        List<Long> rootIds = poPage.getRecords()
-                .stream()
-                .map(CommentPO::getId)
+        // 再检查状态为VISIBLE的评论数量
+        long visibleComments = jCommentMapper.selectCount(
+                new QueryWrapper<CommentPO>()
+                        .eq("item_id", postId)
+                        .eq("item_type", CommentPO.ItemType.POST)
+                        .eq("parent_id", 0)
+                        .eq("status", CommentPO.Status.VISIBLE)
+        );
+        log.info("数据库中该动态状态为VISIBLE的一级评论数: {}", visibleComments);
+
+        log.info("开始查询评论: postId={}, currentUserId={}", postId, currentUserId);
+        IPage<CommentVO> rootCommentsPage = jCommentMapper.selectCommentsWithDetails(pageParam, postId, sort, currentUserId);
+        log.info("查询到一级评论数量: {}", rootCommentsPage.getRecords().size());
+
+        if (rootCommentsPage.getRecords().isEmpty()) {
+            log.warn("未查询到任何评论数据: postId={}", postId);
+            return rootCommentsPage;
+        }
+
+        // 获取一级评论ID列表
+        List<Long> rootIds = rootCommentsPage.getRecords().stream()
+                .map(CommentVO::getId)
                 .collect(Collectors.toList());
 
-        //一次性查二级评论
-        List<CommentPO> subList = CollUtil.isEmpty(rootIds) ? Collections.emptyList()
-                : jCommentMapper.selectList(
-                new QueryWrapper<CommentPO>()
-                        .in("parent_id", rootIds)
-                        .orderByAsc("created_at"));
+        // 批量查询二级评论
+        List<CommentVO> subComments = jCommentMapper.selectSubCommentsWithDetails(rootIds, currentUserId);
 
-        //把二级按 parent_id 分组
-        Map<Long, List<CommentPO>> subMap = subList.stream()
-                .collect(Collectors.groupingBy(CommentPO::getParentId));
+        // 按父评论ID分组二级评论
+        Map<Long, List<CommentVO>> subCommentsMap = subComments.stream()
+                .collect(Collectors.groupingBy(CommentVO::getParentId));
 
-        /*拼Vo（一级 二级 user @用户 点赞信息*/
-        List<CommentVO> voList = poPage.getRecords().stream().map(root -> {
-            CommentVO vo = new CommentVO();
-//            BeanUtil.copyProperties(root, vo);          // 同名字段快速拷贝（ Hutool 工具，Spring 的 BeanUtils 也行）
-            vo.setId(root.getId());
-            vo.setContent(root.getContent());
-            vo.setParentId(root.getParentId());
-            vo.setCreatedAt(root.getCreatedAt());
-            // 发评论的用户信息
-            vo.setUser(buildUserVo(root.getUserId()));
-            /*@用户 JSON 数组  -> List<UserVo>*/
-            vo.setAtUsers(parseAtUsers(root.getAtUsers()));
+        // 处理@用户信息并设置二级评论
+        for (CommentVO rootComment : rootCommentsPage.getRecords()) {
+            // 解析@用户信息
+            rootComment.setAtUsers(parseAtUsers(rootComment.getAtUsersJson()));
 
-            // 5.3 当前用户是否点赞（应使用当前登录用户 + 评论自身ID）
-            Long currUserId = null;
-            try {
-                currUserId = BaseContext.getCurrentId();
-            } catch (Exception ignored) {}
-            boolean isLiked = false;
-            if (currUserId != null) {
-                isLiked = jLikeMapper.selectCount(
-                        new LambdaQueryWrapper<LikePO>()
-                                .eq(LikePO::getUserId, currUserId)
-                                .eq(LikePO::getItemId, root.getId())
-                                .eq(LikePO::getItemType, "COMMENT")
-                ) > 0;
+            // 设置二级评论
+            List<CommentVO> replies = subCommentsMap.getOrDefault(rootComment.getId(), Collections.emptyList());
+            // 为二级评论也解析@用户信息
+            for (CommentVO reply : replies) {
+                reply.setAtUsers(parseAtUsers(reply.getAtUsersJson()));
             }
+            rootComment.setReplies(replies);
+            rootComment.setReplyCount(replies.size());
+        }
 
-            vo.setIsLiked(isLiked);
-
-            // 5.4 二级回复
-            List<CommentVO> replies = Optional.ofNullable(subMap.get(root.getId()))
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .map(sub -> buildSubCommentVo(sub))
-                    .collect(Collectors.toList());
-            vo.setReplies(replies);
-            vo.setReplyCount(subMap.getOrDefault(root.getId(), Collections.emptyList()).size());
-
-            return vo;
-        }).collect(Collectors.toList());
-
-        //6. 把 List 重新包成 IPage 返
-        IPage<CommentVO> voPage = new Page<>(page, size);
-        voPage.setRecords(voList);
-        voPage.setTotal(poPage.getTotal());
-        return voPage;
+        log.info("获取评论列表完成: postId={}, total={}, pages={}", postId, rootCommentsPage.getTotal(), rootCommentsPage.getPages());
+        return rootCommentsPage;
     }
 
     /*工具方*/
-
-    private UserSimpleVO buildUserVo(Long userId) {
-        UserPO user = jUserMapper.selectById(userId);
-        return user == null ? null : new UserSimpleVO(
-                user.getId(),user.getNickname(),user.getAvatarUrl(),user.getGender(),user.getCampusId(),
-                user.getIsRealName(),user.getCreatedAt()
-        );
-    }
 
     private List<UserSimpleVO> parseAtUsers(String json) {
         if (StrUtil.isBlank(json)) return Collections.emptyList();
@@ -214,31 +198,6 @@ public class jCommentServiceImpl implements jCommentService {
         }
     }
 
-    private CommentVO buildSubCommentVo(CommentPO sub) {
-        CommentVO vo = new CommentVO();
-        BeanUtil.copyProperties(sub, vo);
-        vo.setUser(buildUserVo(sub.getUserId()));
-        vo.setAtUsers(parseAtUsers(sub.getAtUsers()));
-
-
-        Long currUserId = null;
-        try {
-            currUserId = BaseContext.getCurrentId();
-        } catch (Exception ignored) {}
-        boolean isLiked = false;
-        if (currUserId != null) {
-            isLiked = jLikeMapper.selectCount(
-                    new LambdaQueryWrapper<LikePO>()
-                            .eq(LikePO::getUserId, currUserId)
-                            .eq(LikePO::getItemId, sub.getId())
-                            .eq(LikePO::getItemType, "COMMENT")
-            ) > 0;
-        }
-        vo.setIsLiked(isLiked);
-
-        return vo;
-    }
-
     /**
      * 根据用户ID集合构建 UserSimpleVO 列表
      */
@@ -257,20 +216,7 @@ public class jCommentServiceImpl implements jCommentService {
         }
     }
 
-    /**
-     * 获取一个post的评论的数量
-     * @param postId
-     * @param type
-     */
-    @Override
-    public long getCommentCount(Long postId,String type) {
-        return jCommentMapper.selectCount(
-                new QueryWrapper<CommentPO>()
-                        .eq("item_id", postId)
-                        .eq("item_type", type.toUpperCase())
-        );
-    }
-    
+
     /**
      * 创建评论通知
      */
@@ -278,30 +224,26 @@ public class jCommentServiceImpl implements jCommentService {
         try {
             Long fromUserId = commentPO.getUserId();
             Long postId = commentPO.getItemId();
-            
+
             // 获取动态作者ID
             PostPO post = jPostMapper.selectById(postId);
             if (post == null) {
                 return;
             }
-            
+
             Long toUserId = post.getUserId();
-            
+
             // 不给自己发通知
             if (toUserId.equals(fromUserId)) {
                 return;
             }
-            
+
             // 获取评论用户信息
             UserPO fromUser = jUserMapper.selectById(fromUserId);
             if (fromUser == null) {
                 return;
             }
-            
-            // 构建通知内容
-            String title = "收到新的评论";
-            String content = String.format("%s 评论了你的动态", fromUser.getNickname());
-            
+
             // 如果是回复评论，需要特殊处理
             if (commentPO.getParentId() != null && commentPO.getParentId() > 0) {
                 // 获取被回复的评论
@@ -313,51 +255,125 @@ public class jCommentServiceImpl implements jCommentService {
                         createReplyNotification(commentPO, parentComment, fromUser);
                     }
                 }
-                content = String.format("%s 回复了你的动态", fromUser.getNickname());
             }
-            
+
             // 使用PushService发送通知
-            jPushService.pushNotification(
-                toUserId,
-                NotificationPO.Type.COMMENT.name(),
-                title,
-                content,
-                postId,
-                NotificationPO.RefType.POST.name(),
-                fromUserId
+            jPushService.pushCommentNotification(
+                    toUserId,
+                    fromUserId,
+                    postId,
+                    NotificationPO.RefType.POST.name(),
+                    commentPO.getContent()
             );
-            
+
         } catch (Exception e) {
-            log.error("创建评论通知失败: commentId={}, error={}", 
-                commentPO.getId(), e.getMessage(), e);
+            log.error("创建评论通知失败: commentId={}, error={}",
+                    commentPO.getId(), e.getMessage(), e);
         }
     }
-    
+
     /**
      * 创建回复通知
      */
     private void createReplyNotification(CommentPO replyComment, CommentPO parentComment, UserPO fromUser) {
         try {
             Long toUserId = parentComment.getUserId();
-            
-            // 构建通知内容
-            String title = "收到新的回复";
-            String content = String.format("%s 回复了你的评论", fromUser.getNickname());
-            
+
+            // pushCommentNotification会自动构建通知内容
+
             // 使用PushService发送通知
-            jPushService.pushNotification(
-                toUserId,
-                NotificationPO.Type.COMMENT.name(),
-                title,
-                content,
-                replyComment.getItemId(), // 关联到动态ID
-                NotificationPO.RefType.POST.name(),
-                fromUser.getId()
+            jPushService.pushCommentNotification(
+                    toUserId,
+                    fromUser.getId(),
+                    replyComment.getItemId(),
+                    NotificationPO.RefType.POST.name(),
+                    replyComment.getContent()
             );
-            
+
         } catch (Exception e) {
-            log.error("创建回复通知失败: replyCommentId={}, parentCommentId={}, error={}", 
-                replyComment.getId(), parentComment.getId(), e.getMessage(), e);
+            log.error("创建回复通知失败: replyCommentId={}, parentCommentId={}, error={}",
+                    replyComment.getId(), parentComment.getId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 创建@用户通知
+     */
+    private void createAtUserNotifications(CommentPO commentPO, List<Long> atUserIds) {
+        if (atUserIds == null || atUserIds.isEmpty()) {
+            return;
+        }
+
+        try {
+            Long fromUserId = commentPO.getUserId();
+
+            for (Long toUserId : atUserIds) {
+                // 不给自己发通知
+                if (toUserId.equals(fromUserId)) {
+                    continue;
+                }
+
+                // 使用PushService发送@用户通知
+                jPushService.pushAtUserNotification(
+                        toUserId,
+                        fromUserId,
+                        commentPO.getItemId(),
+                        NotificationPO.RefType.POST.name(),
+                        commentPO.getContent()
+                );
+            }
+
+        } catch (Exception e) {
+            log.error("创建@用户通知失败: commentId={}, atUserIds={}, error={}",
+                    commentPO.getId(), atUserIds, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 构建CommentVO对象
+     */
+    private CommentVO buildCommentVO(CommentPO commentPO, List<Long> atUserIds) {
+        try {
+            CommentVO commentVO = new CommentVO();
+            commentVO.setId(commentPO.getId());
+            commentVO.setContent(commentPO.getContent());
+            commentVO.setParentId(commentPO.getParentId());
+            commentVO.setStatus(commentPO.getStatus().name());
+            commentVO.setCreatedAt(commentPO.getCreatedAt());
+
+            // 获取用户信息
+            UserPO user = jUserMapper.selectById(commentPO.getUserId());
+            if (user != null) {
+                UserSimpleVO userVO = new UserSimpleVO(
+                        user.getId(),
+                        user.getNickname(),
+                        user.getAvatarUrl(),
+                        user.getGender(),
+                        user.getCampusId(),
+                        user.getIsRealName(),
+                        user.getCreatedAt()
+                );
+                commentVO.setUser(userVO);
+            }
+
+            // 设置@用户信息
+            if (atUserIds != null && !atUserIds.isEmpty()) {
+                List<UserSimpleVO> atUsers = buildUsersByIds(atUserIds);
+                commentVO.setAtUsers(atUsers);
+            } else {
+                commentVO.setAtUsers(Collections.emptyList());
+            }
+
+            // 设置默认值
+            commentVO.setLikeCnt(0);
+            commentVO.setIsLiked(false);
+            commentVO.setReplyCount(0);
+            commentVO.setReplies(Collections.emptyList());
+
+            return commentVO;
+        } catch (Exception e) {
+            log.error("构建CommentVO失败: commentId={}, error={}", commentPO.getId(), e.getMessage(), e);
+            throw new RuntimeException("构建评论数据失败", e);
         }
     }
 
