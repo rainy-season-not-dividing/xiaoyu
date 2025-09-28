@@ -27,4 +27,20 @@ public interface jTopicMapper extends BaseMapper<TopicPO> {
                                                   @Param("topicId") Long topicId,
                                                   @Param("sort") String sort,
                                                   @Param("currentUserId") Long currentUserId);
+
+    /**
+     * 增加话题的动态数量
+     *
+     * @param topicId 话题ID
+     * @param increment 增加的数量（可以是负数表示减少）
+     */
+    void updatePostCount(@Param("topicId") Long topicId, @Param("increment") int increment);
+
+    /**
+     * 批量增加话题的动态数量
+     *
+     * @param topicIds 话题ID列表
+     * @param increment 增加的数量（可以是负数表示减少）
+     */
+    void batchUpdatePostCount(@Param("topicIds") java.util.List<Long> topicIds, @Param("increment") int increment);
 }

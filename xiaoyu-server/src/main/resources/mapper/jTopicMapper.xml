@@ -106,5 +106,21 @@
             </otherwise>
         </choose>
     </select>
+    <!-- 更新话题的动态数量 -->
+    <update id="updatePostCount">
+        UPDATE topics
+        SET post_cnt = GREATEST(0, COALESCE(post_cnt, 0) + #{increment})
+        WHERE id = #{topicId}
+    </update>
+
+    <!-- 批量更新话题的动态数量 -->
+    <update id="batchUpdatePostCount">
+        UPDATE topics
+        SET post_cnt = GREATEST(0, COALESCE(post_cnt, 0) + #{increment})
+        WHERE id IN
+        <foreach collection="topicIds" item="topicId" open="(" separator="," close=")">
+            #{topicId}
+        </foreach>
+    </update>
 
 </mapper>

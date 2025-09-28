@@ -65,20 +65,6 @@ public class AuthController {
         String account = (String) params.get("account");
         String password = (String) params.get("password");
         try {
-            // 基本参数验证
-            if (account == null || account.trim().isEmpty()) {
-                return Result.error("用户名不能为空");
-            }
-            if (password == null || password.trim().isEmpty()) {
-                return Result.error("密码不能为空");
-            }
-            if (account.length() < 3 || account.length() > 50) {
-                return Result.error("用户名长度必须在3-50个字符之间");
-            }
-            if (password.length() < 6 || password.length() > 20) {
-                return Result.error("密码长度必须在6-20个字符之间");
-            }
-
             LoginVO loginVO = jAuthService.register(account, password);
             log.info("用户注册成功: {}", account);
             return Result.success(loginVO);
@@ -87,6 +73,25 @@ public class AuthController {
             return Result.error(e.getMessage());
         }
     }
+
+
+    /**
+     * 生成唯一账号
+     *
+     * @return 十位数字字符串账号
+     */
+    @GetMapping("/generate-account")
+    public Result<String> generateAccount() {
+        try {
+            String account = jAuthService.generateUniqueAccount();
+            log.info("成功生成账号: {}", account);
+            return Result.success("成功",account);
+        } catch (Exception e) {
+            log.error("生成账号失败: {}", e.getMessage());
+            return Result.error(e.getMessage());
+        }
+    }
+
 
     /**
      * 退出登录

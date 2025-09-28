@@ -51,7 +51,7 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
             // 添加用户会话
             USER_SESSIONS.put(userId, session);
             // 在Redis中标记用户在线，设置30分钟过期时间
-            redisTemplate.opsForValue().set("user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
+            redisTemplate.opsForValue().set("xiaoyu:user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
 //
 //            // 处理用户上线事件，推送离线消息
 //            userOnlineEventHandler.handleUserOnline(userId);
@@ -125,7 +125,7 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
         if (userId != null) {
             USER_SESSIONS.remove(userId);
             // 从Redis中移除在线状态
-            redisTemplate.delete("user:online:" + userId);
+            redisTemplate.delete("xiaoyu:user:online:" + userId);
             log.info("用户 {} WebSocket连接关闭: {}", userId, closeStatus);
         }
     }
@@ -151,7 +151,7 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
      */
     private void handleHeartbeatMessage(Long userId) {
         // 心跳时刷新Redis在线状态的过期时间
-        redisTemplate.opsForValue().set("user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
+        redisTemplate.opsForValue().set("xiaoyu:user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
 
         Map<String, Object> heartbeatResponse = Map.of(
                 "type", "heartbeat_ack",
@@ -232,7 +232,7 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
             log.warn("WebSocket发送失败: userId={}, error={}", userId, e.getMessage());
             // 发送失败时清理可能的无效状态
             USER_SESSIONS.remove(userId);
-            redisTemplate.delete("user:online:" + userId);
+            redisTemplate.delete("xiaoyu:user:online:" + userId);
             return false;
         }
     }
@@ -260,18 +260,18 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
     public boolean isUserOnline(Long userId) {
         WebSocketSession session = USER_SESSIONS.get(userId);
         boolean hasValidSession = session != null && session.isOpen();
-        boolean hasRedisStatus = Boolean.TRUE.equals(redisTemplate.hasKey("user:online:" + userId));
+        boolean hasRedisStatus = Boolean.TRUE.equals(redisTemplate.hasKey("xiaoyu:user:online:" + userId));
 
         // 如果Redis状态存在但会话无效，清理Redis状态
         if (hasRedisStatus && !hasValidSession) {
-            redisTemplate.delete("user:online:" + userId);
+            redisTemplate.delete("xiaoyu:user:online:" + userId);
             log.warn("清理无效的Redis在线状态: userId={}", userId);
             return false;
         }
 
         // 如果会话存在但Redis状态丢失，重新设置Redis状态
         if (hasValidSession && !hasRedisStatus) {
-            redisTemplate.opsForValue().set("user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
+            redisTemplate.opsForValue().set("xiaoyu:user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
             log.warn("恢复丢失的Redis在线状态: userId={}", userId);
         }
 

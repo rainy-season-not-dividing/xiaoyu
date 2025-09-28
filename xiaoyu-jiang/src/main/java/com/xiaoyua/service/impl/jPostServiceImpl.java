@@ -17,13 +17,9 @@ import com.xiaoyua.es.yujiPostSearchRepository;
 import com.xiaoyua.service.*;
 import com.xiaoyua.vo.file.FileSimpleVO;
 import com.xiaoyua.vo.post.PostVO;
-import com.xiaoyua.vo.post.PostStatsVO;
-import com.xiaoyua.vo.post.PostUserActionsVO;
 import com.xiaoyua.vo.common.PageResult;
 import com.xiaoyua.vo.search.PostSearchVO;
 import com.xiaoyua.vo.topic.TopicSimpleVO;
-import com.xiaoyua.vo.user.UserSimpleVO;
-import com.xiaoyua.vo.user.UserVO;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +37,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,7 +59,6 @@ public class jPostServiceImpl implements jPostService {
     private final jMessageService messageService;
     private final jUserMapper userMapper;
     private final jPostStatMapper postStatMapper;
-    private final jFileMapper fileMapper;
     private final jTopicPostMapper topicPostMapper;
     private final jTopicMapper topicMapper;
     private final jPostFileServiceImpl postFileService;
@@ -140,6 +134,13 @@ public class jPostServiceImpl implements jPostService {
                             .build())
                     .collect(Collectors.toList());
             topicPostMapper.saveBatch(topicPostList);
+
+            // 增加话题的动态数量
+            try {
+                topicMapper.batchUpdatePostCount(postCreateDTO.getTopicIds(), 1);
+            } catch (Exception e) {
+                log.error("更新话题动态数量失败, postId: {}, topicIds: {}", post.getId(), postCreateDTO.getTopicIds(), e);
+            }
         }
         // 返回详情或概要，这里复用现有转换
         return getPostDetail(post.getId());
@@ -163,19 +164,19 @@ public class jPostServiceImpl implements jPostService {
         batchFillPostRelatedData(vos);
 
         // todo: 模拟数据加入es中(正式测试时要删除)
-         List<PostSearchVO> searchVOs = vos.stream().map(
-                 postVO -> {
-         PostSearchVO searchVO = new PostSearchVO();
-         searchVO.setId(postVO.getId());
-         searchVO.setTitle(postVO.getTitle());
-         searchVO.setContent(postVO.getContent());
-         searchVO.setCreatedAt(postVO.getCreatedAt());
-         searchVO.setUser(new PostSearchVO.UserVO(postVO.getUser().getId(),
-         postVO.getUser().getNickname(), postVO.getUser().getAvatarUrl()));
-         return searchVO;
-         }
-         ).toList();
-         repository.saveAll(searchVOs);
+//        List<PostSearchVO> searchVOs = vos.stream().map(
+//                postVO -> {
+//                    PostSearchVO searchVO = new PostSearchVO();
+//                    searchVO.setId(postVO.getId());
+//                    searchVO.setTitle(postVO.getTitle());
+//                    searchVO.setContent(postVO.getContent());
+//                    searchVO.setCreatedAt(postVO.getCreatedAt());
+//                    searchVO.setUser(new PostSearchVO.UserVO(postVO.getUser().getId(),
+//                            postVO.getUser().getNickname(), postVO.getUser().getAvatarUrl()));
+//                    return searchVO;
+//                }
+//        ).toList();
+//        repository.saveAll(searchVOs);
 
         return PageResult.of(vos, pageNum, pageSize, postVOPage.getTotal());
     }
@@ -335,12 +336,30 @@ public class jPostServiceImpl implements jPostService {
         if (postPO == null) {
             throw new RuntimeException("动态不存在");
         }
+
+        // 查询关联的话题ID列表，用于减少话题动态计数
+        List<TopicPostPO> topicPosts = topicPostMapper.selectList(
+                new LambdaQueryWrapper<TopicPostPO>().eq(TopicPostPO::getPostId, postId));
+        List<Long> topicIds = topicPosts.stream()
+                .map(TopicPostPO::getTopicId)
+                .collect(Collectors.toList());
+
         // if (!"PUBLISHED".equals(postPO.getStatus().name())) {
         // throw new RuntimeException("动态不可删除");
         // }
         postMapper.deleteById(postId);
         topicPostMapper.delete(new QueryWrapper<TopicPostPO>().eq("post_id", postId));
         postFileMapper.delete(new QueryWrapper<PostFilePO>().eq("post_id", postId));
+
+        // 减少话题的动态数量
+        if (!topicIds.isEmpty()) {
+            try {
+                topicMapper.batchUpdatePostCount(topicIds, -1);
+            } catch (Exception e) {
+                log.error("减少话题动态数量失败, postId: {}, topicIds: {}", postId, topicIds, e);
+            }
+        }
+
         Long userId = BaseContext.getCurrentId();
         likeService.deleteLike(postId, userId, "POST");
         favService.deleteFavorite(postId, userId);
@@ -402,6 +421,14 @@ public class jPostServiceImpl implements jPostService {
         if (postPO == null) {
             return;
         }
+
+        // 查询原有的话题ID列表，用于后续更新话题计数
+        List<TopicPostPO> oldTopicPosts = topicPostMapper.selectList(
+                new LambdaQueryWrapper<TopicPostPO>().eq(TopicPostPO::getPostId, postId));
+        List<Long> oldTopicIds = oldTopicPosts.stream()
+                .map(TopicPostPO::getTopicId)
+                .collect(Collectors.toList());
+
         if (postUpdateDTO.getTitle() != null) {
             postPO.setTitle(postUpdateDTO.getTitle());
         }
@@ -423,6 +450,16 @@ public class jPostServiceImpl implements jPostService {
         // postFileMapper根据taskId批量删除
         postFileMapper.delete(new LambdaQueryWrapper<PostFilePO>().eq(PostFilePO::getPostId, postId));
         topicPostMapper.delete(new LambdaQueryWrapper<TopicPostPO>().eq(TopicPostPO::getPostId, postId));
+
+        // 减少原有话题的动态数量
+        if (!oldTopicIds.isEmpty()) {
+            try {
+                topicMapper.batchUpdatePostCount(oldTopicIds, -1);
+            } catch (Exception e) {
+                log.error("减少原有话题动态数量失败, postId: {}, oldTopicIds: {}", postId, oldTopicIds, e);
+            }
+        }
+
         // 更新文件
 
         // filemapper 批量添加
@@ -446,6 +483,13 @@ public class jPostServiceImpl implements jPostService {
                             .build())
                     .collect(Collectors.toList());
             topicPostMapper.saveBatch(topicPostPOList);
+
+            // 增加新话题的动态数量
+            try {
+                topicMapper.batchUpdatePostCount(postUpdateDTO.getTopicIds(), 1);
+            } catch (Exception e) {
+                log.error("增加新话题动态数量失败, postId: {}, newTopicIds: {}", postId, postUpdateDTO.getTopicIds(), e);
+            }
         }
         // 关联文件（如果有）
         // if (postUpdateDTO.getFiles() != null &&

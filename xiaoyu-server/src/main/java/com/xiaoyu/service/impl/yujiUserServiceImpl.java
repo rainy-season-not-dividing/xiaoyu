@@ -11,13 +11,11 @@ import com.xiaoyu.dto.user.BindMobileDTO;
 import com.xiaoyu.dto.user.UserRealNameDTO;
 import com.xiaoyu.dto.user.UserSelfInfoDTO;
 import com.xiaoyu.entity.CampusPO;
+import com.xiaoyu.entity.FriendshipsPO;
 import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.mapper.yujiUserMapper;
 import com.xiaoyu.result.PageResult;
-import com.xiaoyu.service.yujiBlacklistsService;
-import com.xiaoyu.service.yujiCampusesService;
-import com.xiaoyu.service.yujiFilesService;
-import com.xiaoyu.service.yujiUserService;
+import com.xiaoyu.service.*;
 import com.xiaoyu.vo.user.BlacklistsVO;
 import com.xiaoyu.vo.user.UserVO;
 import jakarta.annotation.Resource;
@@ -44,12 +42,17 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
     @Resource
     private RedisTemplate<String,Object> redisTemplate;
 
+    @Resource
+    private yujiFriendShipsService yujiFriendShipsService;
+
 
     @Override
     public UsersPO getUserSelfInfo(Long id) {
         UsersPO userInfo = getById(id);
         Long campusId = userInfo.getCampusId();
-        userInfo.setCampusName(campusesService.getById(campusId).getName());
+        if(campusId!=null){
+            userInfo.setCampusName(campusesService.getById(campusId).getName());
+        }
         return userInfo;
     }
 
@@ -58,8 +61,16 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
         UsersPO userInfo = getById(userId);
         Long campusId = userInfo.getCampusId();
         userInfo.setCampusName(campusesService.getById(campusId).getName());
+        UserVO userVO= BeanUtil.copyProperties(userInfo,UserVO.class);
+        Long currentId = BaseContext.getId();
+        Long smallId = currentId > userId ? userId : currentId;
+        Long bigId = currentId > userId ? currentId : userId;
+        Boolean isFriend = yujiFriendShipsService.exists(new LambdaQueryWrapper<FriendshipsPO>()
+                .eq(FriendshipsPO::getUserId, smallId)
+                .eq(FriendshipsPO::getFriendId, bigId));
+        userVO.setIsFriend(isFriend);
         // todo:还要拿到用户粉丝、关注数
-        return BeanUtil.copyProperties(userInfo,UserVO.class);
+        return userVO;
     }
 
     @Override

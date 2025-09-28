@@ -13,6 +13,7 @@ import com.xiaoyua.service.jLikeService;
 import com.xiaoyua.service.jFavService;
 import com.xiaoyua.service.jShareService;
 import com.xiaoyua.service.jFileService;
+import com.xiaoyua.vo.common.PageResult;
 import com.xiaoyua.vo.post.PostVO;
 import com.xiaoyua.result.Result;
 import jakarta.annotation.Resource;
@@ -260,6 +261,26 @@ public class PostController {
     void clearCache(){
         log.info("定时任务调度, 更新热门动态");
         clearCache(PostConstant.POST_HOT_KEY_PREFIX+"::*");
+    }
+
+    @GetMapping("/like")
+    @Operation(summary = "获取我的喜欢动态列表")
+    public Result<PageResult<PostVO>> getLikePosts(@RequestParam(value = "page", required = false) Integer page,
+                                                   @RequestParam(value = "size", required = false) Integer size,
+                                                   @RequestParam(value = "sort", required = false) String sort) {
+        log.info("getLikePosts page={}, size={}, sort={}", page, size, sort);
+        var pageResult = jPostService.listLike(page, size, sort);
+        return Result.success("success", pageResult);
+    }
+
+    @GetMapping("/favorite")
+    @Operation(summary = "获取我的收藏动态列表")
+    public Result<PageResult<PostVO>> getFavoritePosts(@RequestParam(value = "page", required = false) Integer page,
+                                                       @RequestParam(value = "size", required = false) Integer size,
+                                                       @RequestParam(value = "sort", required = false) String sort) {
+        log.info("getFavoritePosts page={}, size={}, sort={}", page, size, sort);
+        var pageResult = jPostService.listFavorite(page, size, sort);
+        return Result.success("success", pageResult);
     }
 
 

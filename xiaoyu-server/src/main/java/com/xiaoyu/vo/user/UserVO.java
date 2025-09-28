@@ -49,6 +49,9 @@ public class UserVO {
     /** 粉丝列表可见范围 */
     private Integer privacyFans;
 
+    /** 是否是好友*/
+    private Boolean isFriend;
+
     /** 注册时间 0公开 1好友 2仅自己 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

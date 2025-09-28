@@ -21,4 +21,10 @@ public interface jAuthService {
      * @return 注册结果
      */
     LoginVO register(String account, String password);
+
+    /**
+     * 生成唯一账号
+     * @return 十位数字字符串账号，第一位不为零且保证唯一性
+     */
+    String generateUniqueAccount();
 }

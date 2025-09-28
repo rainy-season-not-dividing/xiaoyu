@@ -4,36 +4,31 @@
 
     <!-- 查询用户点赞的动态列表 -->
     <select id="selectLikedPostsByUser" resultType="com.xiaoyua.entity.PostPO">
-        SELECT DISTINCT p.*
-        FROM posts p
-        INNER JOIN likes l ON p.id = l.item_id
-        WHERE l.user_id = #{userId}
-        AND l.item_type = 'POST'
-        AND p.status = 'PUBLISHED'
-        AND (
-        p.visibility = 'PUBLIC'
-        OR (p.visibility = 'FRIEND' AND EXISTS (
-        SELECT 1 FROM friendships f
-        WHERE ((f.user_id = p.user_id AND f.friend_id = #{userId})
-        OR (f.user_id = #{userId} AND f.friend_id = p.user_id))
-        AND f.status = 'ACCEPTED'
-        ))
-        OR (p.visibility = 'CAMPUS' AND EXISTS (
-        SELECT 1 FROM users u1, users u2
-        WHERE u1.id = p.user_id AND u2.id = #{userId}
-        AND u1.campus_id = u2.campus_id
-        AND u1.campus_id IS NOT NULL
-        ))
-        OR p.user_id = #{userId}
-        )
-        <choose>
-            <when test="sort == 'hot'">
-                ORDER BY l.created_at DESC, p.created_at DESC
-            </when>
-            <otherwise>
-                ORDER BY l.created_at DESC, p.created_at DESC
-            </otherwise>
-        </choose>
+        SELECT * FROM (
+                          SELECT DISTINCT p.*, l.created_at AS like_time
+                          FROM posts p
+                                   INNER JOIN likes l ON p.id = l.item_id
+                          WHERE l.user_id = #{userId}
+                            AND l.item_type = 'POST'
+                            AND p.status = 'PUBLISHED'
+                            AND (
+                              p.visibility = 'PUBLIC'
+                                  OR (p.visibility = 'FRIEND' AND EXISTS (
+                                  SELECT 1 FROM friendships f
+                                  WHERE ((f.user_id = p.user_id AND f.friend_id = #{userId})
+                                      OR (f.user_id = #{userId} AND f.friend_id = p.user_id))
+                                    AND f.status = 'ACCEPTED'
+                              ))
+                                  OR (p.visibility = 'CAMPUS' AND EXISTS (
+                                  SELECT 1 FROM users u1, users u2
+                                  WHERE u1.id = p.user_id AND u2.id = #{userId}
+                                    AND u1.campus_id = u2.campus_id
+                                    AND u1.campus_id IS NOT NULL
+                              ))
+                                  OR p.user_id = #{userId}
+                              )
+                      ) AS temp
+        ORDER BY temp.like_time DESC, temp.created_at DESC
         LIMIT #{offset}, #{size}
     </select>
 
@@ -63,38 +58,32 @@
             )
     </select>
 
-    <!-- 查询用户收藏的动态列表 -->
     <select id="selectFavoritedPostsByUser" resultType="com.xiaoyua.entity.PostPO">
-        SELECT DISTINCT p.*
-        FROM posts p
-        INNER JOIN favorites f ON p.id = f.item_id
-        WHERE f.user_id = #{userId}
-        AND f.item_type = 'POST'
-        AND p.status = 'PUBLISHED'
-        AND (
-        p.visibility = 'PUBLIC'
-        OR (p.visibility = 'FRIEND' AND EXISTS (
-        SELECT 1 FROM friendships fs
-        WHERE ((fs.user_id = p.user_id AND fs.friend_id = #{userId})
-        OR (fs.user_id = #{userId} AND fs.friend_id = p.user_id))
-        AND fs.status = 'ACCEPTED'
-        ))
-        OR (p.visibility = 'CAMPUS' AND EXISTS (
-        SELECT 1 FROM users u1, users u2
-        WHERE u1.id = p.user_id AND u2.id = #{userId}
-        AND u1.campus_id = u2.campus_id
-        AND u1.campus_id IS NOT NULL
-        ))
-        OR p.user_id = #{userId}
-        )
-        <choose>
-            <when test="sort == 'hot'">
-                ORDER BY f.created_at DESC, p.created_at DESC
-            </when>
-            <otherwise>
-                ORDER BY f.created_at DESC, p.created_at DESC
-            </otherwise>
-        </choose>
+        SELECT * FROM (
+                          SELECT DISTINCT p.*, f.created_at AS favorite_time
+                          FROM posts p
+                                   INNER JOIN favorites f ON p.id = f.item_id
+                          WHERE f.user_id = #{userId}
+                            AND f.item_type = 'POST'
+                            AND p.status = 'PUBLISHED'
+                            AND (
+                              p.visibility = 'PUBLIC'
+                                  OR (p.visibility = 'FRIEND' AND EXISTS (
+                                  SELECT 1 FROM friendships fs
+                                  WHERE ((fs.user_id = p.user_id AND fs.friend_id = #{userId})
+                                      OR (fs.user_id = #{userId} AND fs.friend_id = p.user_id))
+                                    AND fs.status = 'ACCEPTED'
+                              ))
+                                  OR (p.visibility = 'CAMPUS' AND EXISTS (
+                                  SELECT 1 FROM users u1, users u2
+                                  WHERE u1.id = p.user_id AND u2.id = #{userId}
+                                    AND u1.campus_id = u2.campus_id
+                                    AND u1.campus_id IS NOT NULL
+                              ))
+                                  OR p.user_id = #{userId}
+                              )
+                      ) AS temp
+        ORDER BY temp.favorite_time DESC, temp.created_at DESC
         LIMIT #{offset}, #{size}
     </select>
 
