@@ -56,15 +56,15 @@ public class NotificationConsumer {
             if (webSocketHandler.isUserOnline(message.getUserId())) {
                 pushToWebSocket(message, notification.getId());
             } else {
-                // 用户离线，存储到离线消息表
-                log.info("用户离线，存储离线通知: userId={}, messageId={}", 
-                        message.getUserId(), message.getMessageId());
-                
-                boolean stored = jOfflineMessageService.storeOfflineNotification(message, notification.getId());
-                if (!stored) {
-                    log.error("存储离线通知消息失败: messageId={}, userId={}", 
-                            message.getMessageId(), message.getUserId());
-                }
+//                // 用户离线，存储到离线消息表
+//                log.info("用户离线，存储离线通知: userId={}, messageId={}",
+//                        message.getUserId(), message.getMessageId());
+//
+//                boolean stored = jOfflineMessageService.storeOfflineNotification(message, notification.getId());
+//                if (!stored) {
+//                    log.error("存储离线通知消息失败: messageId={}, userId={}",
+//                            message.getMessageId(), message.getUserId());
+//                }
             }
             
             log.info("通知推送处理完成: messageId={}", message.getMessageId());
@@ -73,17 +73,17 @@ public class NotificationConsumer {
             log.error("处理通知推送消息失败: messageId={}, error={}", 
                     message.getMessageId(), e.getMessage(), e);
             
-            // 增加重试次数
-            message.incrementRetry();
-            if (!message.isMaxRetryExceeded()) {
-                // 可以选择重新入队或者其他重试机制
-                log.warn("通知消息将重试: messageId={}, retryCount={}", 
-                        message.getMessageId(), message.getRetryCount());
-            } else {
-                log.error("通知消息超过最大重试次数，放弃处理: messageId={}", 
-                        message.getMessageId());
-            }
-            throw e;
+//            // 增加重试次数
+//            message.incrementRetry();
+//            if (!message.isMaxRetryExceeded()) {
+//                // 可以选择重新入队或者其他重试机制
+//                log.warn("通知消息将重试: messageId={}, retryCount={}",
+//                        message.getMessageId(), message.getRetryCount());
+//            } else {
+//                log.error("通知消息超过最大重试次数，放弃处理: messageId={}",
+//                        message.getMessageId());
+//            }
+//            throw e;
         }
     }
     

@@ -47,34 +47,34 @@ public class MessageConsumer {
                 log.info("私信实时推送成功: messageId={}, toUserId={}", 
                         message.getMessageId(), message.getToUserId());
             } else {
-                // 用户离线，存储到离线消息表
-                log.info("用户离线，存储离线消息: userId={}, messageId={}", 
-                        message.getToUserId(), message.getMessageId());
-                
-                // 存储离线私信消息
-                boolean stored = jOfflineMessageService.storeOfflinePrivateMessage(message);
-                if (!stored) {
-                    log.error("存储离线私信消息失败: messageId={}, toUserId={}", 
-                            message.getMessageId(), message.getToUserId());
-                }
+//                // 用户离线，存储到离线消息表
+//                log.info("用户离线，存储离线消息: userId={}, messageId={}",
+//                        message.getToUserId(), message.getMessageId());
+//
+//                // 存储离线私信消息
+//                boolean stored = jOfflineMessageService.storeOfflinePrivateMessage(message);
+//                if (!stored) {
+//                    log.error("存储离线私信消息失败: messageId={}, toUserId={}",
+//                            message.getMessageId(), message.getToUserId());
+//                }
             }
             
         } catch (Exception e) {
             log.error("处理私信推送消息失败: messageId={}, error={}", 
                     message.getMessageId(), e.getMessage(), e);
-            
-            // 增加重试次数
-            message.incrementRetry();
-            if (!message.isMaxRetryExceeded()) {
-                log.warn("私信消息将重试: messageId={}, retryCount={}", 
-                        message.getMessageId(), message.getRetryCount());
-            } else {
-                log.error("私信消息超过最大重试次数，转为离线存储: messageId={}", 
-                        message.getMessageId());
-                // 超过重试次数，转为离线存储
-                messageProducer.sendOfflineMessageStorage(message);
-            }
-            throw e;
+//
+//            // 增加重试次数
+//            message.incrementRetry();
+//            if (!message.isMaxRetryExceeded()) {
+//                log.warn("私信消息将重试: messageId={}, retryCount={}",
+//                        message.getMessageId(), message.getRetryCount());
+//            } else {
+//                log.error("私信消息超过最大重试次数，转为离线存储: messageId={}",
+//                        message.getMessageId());
+//                // 超过重试次数，转为离线存储
+//                messageProducer.sendOfflineMessageStorage(message);
+//            }
+//            throw e;
         }
     }
     

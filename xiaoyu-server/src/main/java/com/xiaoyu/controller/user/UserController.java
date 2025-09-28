@@ -76,7 +76,7 @@ public class UserController {
     }
 
 
-    @PutMapping(value="/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value="/profile")
     public Result updateUserInfo(@RequestBody UserSelfInfoDTO userSelfInfoDTO){
         log.info("更新当前用户信息：{}",userSelfInfoDTO);
         yujiUserService.updateUserInfo(userSelfInfoDTO);

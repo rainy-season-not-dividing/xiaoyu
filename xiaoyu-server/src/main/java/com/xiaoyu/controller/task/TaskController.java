@@ -68,8 +68,9 @@ public class TaskController {
 
 
     @PutMapping("/{taskId}")
-    public Result<Map<String,Object>> updateTask(@PathVariable Long taskId, @ModelAttribute PublishTaskDTO newTaskDTO){
+    public Result<Map<String,Object>> updateTask(@PathVariable Long taskId, @RequestBody PublishTaskDTO newTaskDTO){
         log.info("更新任务：{}",taskId);
+        log.info("更新任务参数：{}",newTaskDTO);
         return Result.success(yujiTasksService.updateTask(taskId,newTaskDTO));
     }
 
