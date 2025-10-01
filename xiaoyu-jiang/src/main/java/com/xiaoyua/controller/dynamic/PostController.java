@@ -156,7 +156,8 @@ public class PostController {
     public Result addShare(@PathVariable("post_id") @Min(1) Long postId){
         log.info("addShare postId={}", postId);
         jShareService.addShare(postId, BaseContext.getCurrentId());
-        return Result.success("转发成功");
+        long shareCount = jShareService.getShareCount(postId, "POST");
+        return Result.success("转发成功", Map.of("shareCnt", shareCount));
     }
 
     @GetMapping("/hot")
