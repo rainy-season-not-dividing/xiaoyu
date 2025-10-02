@@ -2,6 +2,7 @@ package com.xiaoyua.vo.message;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.xiaoyua.dto.message.MessageContent;
 import com.xiaoyua.vo.user.UserSimpleVO;
 import lombok.Data;
 
@@ -31,9 +32,14 @@ public class MessageVO {
     private UserSimpleVO toUser;
 
     /**
-     * 消息内容
+     * 消息类型：TEXT/POST/TASK
      */
-    private String content;
+    private String type;
+
+    /**
+     * 消息内容（JSON格式，根据type解析）
+     */
+    private MessageContent content;
 
     /**
      * 是否为当前用户发送的消息

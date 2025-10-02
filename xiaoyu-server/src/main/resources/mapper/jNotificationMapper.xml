@@ -21,6 +21,7 @@
             <result column="from_user_avatar_url" property="avatarUrl"/>
             <result column="from_user_gender" property="gender"/>
             <result column="from_user_campus_id" property="campusId"/>
+            <result column="from_user_campus_name" property="campusName"/>
             <result column="from_user_is_real_name" property="isRealName"/>
             <result column="from_user_created_at" property="createdAt"/>
         </association>
@@ -43,10 +44,12 @@
         u.avatar_url as from_user_avatar_url,
         u.gender as from_user_gender,
         u.campus_id as from_user_campus_id,
+        ca.name as from_user_campus_name,
         u.is_real_name as from_user_is_real_name,
         u.created_at as from_user_created_at
         FROM notifications n
         LEFT JOIN users u ON n.from_user_id = u.id
+        left join campuses ca on u.campus_id = ca.id
         WHERE n.user_id = #{userId}
         <if test="type != null and type != ''">
             AND n.type = #{type}

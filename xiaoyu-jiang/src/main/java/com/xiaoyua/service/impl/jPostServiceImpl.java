@@ -163,7 +163,6 @@ public class jPostServiceImpl implements jPostService {
         List<PostVO> vos = postVOPage.getRecords();
         batchFillPostRelatedData(vos);
 
-        // todo: 模拟数据加入es中(正式测试时要删除)
 //        List<PostSearchVO> searchVOs = vos.stream().map(
 //                postVO -> {
 //                    PostSearchVO searchVO = new PostSearchVO();
@@ -491,18 +490,6 @@ public class jPostServiceImpl implements jPostService {
                 log.error("增加新话题动态数量失败, postId: {}, newTopicIds: {}", postId, postUpdateDTO.getTopicIds(), e);
             }
         }
-        // 关联文件（如果有）
-        // if (postUpdateDTO.getFiles() != null &&
-        // !postUpdateDTO.getFileIds().isEmpty()) {
-        // int sort = 0;
-        // for (Long fileId : postCreateDTO.getFileIds()) {
-        // PostFilePO rel = new PostFilePO();
-        // rel.setPostId(post.getId());
-        // rel.setFileId(fileId);
-        // rel.setSort(sort++);
-        // postFileMapper.insert(rel);
-        // }
-        // }
 
         // 更新后写入es
         PostSearchVO postSearchVO = new PostSearchVO();
@@ -524,7 +511,6 @@ public class jPostServiceImpl implements jPostService {
                 Sort.by(Sort.Order.desc("createdAt"))); // 也可以按时间倒序
         org.springframework.data.domain.Page<PostSearchVO> pageRes = repository
                 .findByTitleContainingOrContentContaining(keyword, keyword, pageable);
-        // todo：每次新添加post都要同步到es库中去
         return new PageResult<>(pageRes.getContent(), page, size, pageRes.getTotalElements());
     }
 

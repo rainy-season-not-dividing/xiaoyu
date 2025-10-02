@@ -39,6 +39,9 @@ public class NotificationPO {
     @EnumValue
     private Status status;
 
+    /** 发送者 UID */
+    private Long fromUserId;
+
     /** 通知时间 */
     private LocalDateTime createdAt;
 
@@ -47,7 +50,7 @@ public class NotificationPO {
     }
 
     public enum RefType {
-        POST, TASK, COMMENT
+        POST, TASK, COMMENT, CHAT
     }
 
     public enum Status {

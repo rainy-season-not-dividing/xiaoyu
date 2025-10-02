@@ -2,6 +2,7 @@ package com.xiaoyu.vo.friend;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.xiaoyu.entity.CampusPO;
 import com.xiaoyu.entity.FriendshipsPO;
 import lombok.Data;
 
@@ -63,7 +64,7 @@ public class FriendlistVO {
         /**
          * 校区名称
          */
-        private String campusName;
+        private CampusPO.CampuseName campusName;
     }
 
 }

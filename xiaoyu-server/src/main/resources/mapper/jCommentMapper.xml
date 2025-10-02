@@ -20,6 +20,7 @@
             <result column="user_avatar_url" property="avatarUrl"/>
             <result column="user_gender" property="gender"/>
             <result column="user_campus_id" property="campusId"/>
+            <result column="user_campus_name" property="campusName"/>
             <result column="user_is_real_name" property="isRealName"/>
             <result column="user_created_at" property="createdAt"/>
         </association>
@@ -42,6 +43,7 @@
         u.avatar_url as user_avatar_url,
         u.gender as user_gender,
         u.campus_id as user_campus_id,
+        ca.name as user_campus_name,
         u.is_real_name as user_is_real_name,
         u.created_at as user_created_at,
 
@@ -68,6 +70,7 @@
         <if test="currentUserId == null">
             AND 1 = 0
         </if>
+        left join campuses ca on u.campus_id = ca.id
 
         WHERE c.item_id = #{postId}
         AND c.item_type = 'POST'
@@ -101,6 +104,7 @@
         u.avatar_url as user_avatar_url,
         u.gender as user_gender,
         u.campus_id as user_campus_id,
+        ca.name as user_campus_name,
         u.is_real_name as user_is_real_name,
         u.created_at as user_created_at,
 
@@ -127,6 +131,8 @@
         <if test="currentUserId == null">
             AND 1 = 0
         </if>
+
+        left join campuses ca on u.campus_id = ca.id
 
         WHERE c.parent_id IN
         <foreach collection="parentIds" item="parentId" open="(" separator="," close=")">

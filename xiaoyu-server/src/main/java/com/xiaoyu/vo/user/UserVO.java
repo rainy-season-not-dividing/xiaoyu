@@ -1,6 +1,7 @@
 package com.xiaoyu.vo.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.xiaoyua.entity.CampusPO;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -35,7 +36,7 @@ public class UserVO {
     private Long campusId;
 
     /** 校区名称 */
-    private String campusName;
+    private CampusPO.CampuseName campusName;
 
     /** 是否已实名：0否 1是 */
     private Integer isRealName;

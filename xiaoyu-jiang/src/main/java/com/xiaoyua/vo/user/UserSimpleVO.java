@@ -1,6 +1,11 @@
 package com.xiaoyua.vo.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.xiaoyua.entity.CampusPO;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -39,6 +44,9 @@ import java.time.LocalDateTime;
  * @see com.xiaoyua.vo.user.UserVO
  * @see com.xiaoyua.vo.user.CurrentUserVO
  */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserSimpleVO {
     
     /**
@@ -70,6 +78,11 @@ public class UserSimpleVO {
      * 校园ID
      */
     private Long campusId;
+
+    /**
+     * 校区名称
+     */
+    private CampusPO.CampuseName campusName;
     
     /**
      * 是否实名认证：0-未认证，1-已认证
@@ -82,10 +95,9 @@ public class UserSimpleVO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     
-    public UserSimpleVO() {}
-    
-    public UserSimpleVO(Long id, String nickname, String avatarUrl, Integer gender, 
-                       Long campusId, Integer isRealName, LocalDateTime createdAt) {
+
+    public UserSimpleVO(Long id, String nickname, String avatarUrl, Integer gender,
+                        Long campusId, Integer isRealName, LocalDateTime createdAt) {
         this.id = id;
         this.nickname = nickname;
         this.avatarUrl = avatarUrl;
@@ -94,70 +106,7 @@ public class UserSimpleVO {
         this.isRealName = isRealName;
         this.createdAt = createdAt;
     }
-    
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public String getUsername() {
-        return username;
-    }
-    
-    public void setUsername(String username) {
-        this.username = username;
-    }
-    
-    public String getNickname() {
-        return nickname;
-    }
-    
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
-    
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-    
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-    
-    public Integer getGender() {
-        return gender;
-    }
-    
-    public void setGender(Integer gender) {
-        this.gender = gender;
-    }
-    
-    public Long getCampusId() {
-        return campusId;
-    }
-    
-    public void setCampusId(Long campusId) {
-        this.campusId = campusId;
-    }
-    
-    public Integer getIsRealName() {
-        return isRealName;
-    }
-    
-    public void setIsRealName(Integer isRealName) {
-        this.isRealName = isRealName;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+
     
     @Override
     public String toString() {
@@ -166,7 +115,7 @@ public class UserSimpleVO {
                 ", nickname='" + nickname + '\'' +
                 ", avatarUrl='" + avatarUrl + '\'' +
                 ", gender=" + gender +
-                ", campusId=" + campusId +
+                ", campusName=" + campusName +
                 ", isRealName=" + isRealName +
                 ", createdAt=" + createdAt +
                 '}';

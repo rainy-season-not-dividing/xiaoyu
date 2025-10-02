@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaoyua.common.context.ContextManager;
 import java.time.format.DateTimeFormatter;
 import com.xiaoyua.dto.message.MessageCreateDTO;
+import com.xiaoyua.dto.message.TextMessageContent;
+import com.xiaoyua.utils.MessageContentUtil;
 import com.xiaoyua.service.jMessageService;
 import com.xiaoyua.vo.message.MessageVO;
 import lombok.extern.slf4j.Slf4j;
@@ -51,9 +53,10 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
             // 添加用户会话
             USER_SESSIONS.put(userId, session);
             // 在Redis中标记用户在线，设置30分钟过期时间
-            redisTemplate.opsForValue().set("xiaoyu:user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
-//
-//            // 处理用户上线事件，推送离线消息
+            redisTemplate.opsForValue().set("" +
+                    "xiaoyu:user:online:" + userId, "1", java.time.Duration.ofMinutes(30));
+
+            // 处理用户上线事件，推送离线消息
 //            userOnlineEventHandler.handleUserOnline(userId);
 
             // 发送连接成功确认
@@ -172,8 +175,19 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
             // 2. 构建消息DTO
             MessageCreateDTO messageDTO = new MessageCreateDTO();
             messageDTO.setToId(Long.valueOf(messageData.get("to_id").toString()));
-            messageDTO.setContent((String) messageData.get("content"));
-//            messageDTO.setMessageType((String) messageData.getOrDefault("message_type", "TEXT"));
+
+            // 获取消息类型和内容
+            String messageType = (String) "TEXT";
+            messageDTO.setType(messageType);
+
+            // 根据消息类型创建对应的内容对象
+            String contentStr = (String) messageData.get("content");
+            if ("TEXT".equals(messageType)) {
+                messageDTO.setContent(new TextMessageContent(contentStr));
+            } else {
+                // TODO: 处理POST/TASK转发消息
+                throw new RuntimeException("WebSocket暂不支持转发消息，请使用REST API");
+            }
 
             // 3. 直接调用现有业务逻辑：好友验证、数据库保存、Redis缓存、MQ推送
             MessageVO messageVO = jMessageService.sendMessage(userId, messageDTO);
@@ -185,19 +199,19 @@ public class UnifiedWebSocketHandler extends TextWebSocketHandler {
             // 3. 重试和错误处理机制
             // 4. 避免重复推送
 
-            // 5. 发送成功确认给发送者（不包含消息内容，避免重复）
-            Map<String, Object> successResponse = Map.of(
-                    "type", "message_sent",
-                    "temp_id", tempId,
-                    "message_id", messageVO.getId(),
-                    "status", "success",
-                    "timestamp", System.currentTimeMillis()
-            );
+            // 5. 发送成功确认给发送者（不包含消息内容，避免重复）测试
+            Map<String, Object> successResponse = new java.util.HashMap<>();
+            successResponse.put("type", "message_sent");
+            successResponse.put("temp_id", tempId);
+            successResponse.put("message_id", messageVO.getId()); // 可能为null，但HashMap允许null值
+            successResponse.put("status", "success");
+            successResponse.put("timestamp", System.currentTimeMillis());
             sendMessageToUser(userId, successResponse);
 
+            String displayText = MessageContentUtil.getDisplayText(messageDTO.getContent());
             log.info("WebSocket私信发送成功: fromUserId={}, toUserId={}, messageId={}, contentLen={}",
                     userId, messageDTO.getToId(), messageVO.getId(),
-                    messageDTO.getContent().length());
+                    displayText.length());
 
         } catch (Exception e) {
             log.error("WebSocket处理发送消息失败: userId={}, error={}", userId, e.getMessage(), e);

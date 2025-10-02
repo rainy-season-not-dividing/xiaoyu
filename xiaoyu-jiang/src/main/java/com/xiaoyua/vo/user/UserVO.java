@@ -1,6 +1,8 @@
 package com.xiaoyua.vo.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.xiaoyua.entity.CampusPO;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -51,7 +53,7 @@ public class UserVO {
     /**
      * 校园名称
      */
-    private String campusName;
+    private CampusPO.CampuseName campusName;
     
     /**
      * 是否实名认证：0-未认证，1-已认证
@@ -87,8 +89,8 @@ public class UserVO {
     public UserVO() {}
     
     public UserVO(Long id, String nickname, String avatarUrl, LocalDate birthday, String mobile, Integer gender,
-                 Long campusId, String campusName, Integer isRealName, Integer privacyMobile,
-                 Integer privacyBirthday, Integer privacyFans, LocalDateTime createdAt, UserStatsVO stats) {
+                  Long campusId, CampusPO.CampuseName campusName, Integer isRealName, Integer privacyMobile,
+                  Integer privacyBirthday, Integer privacyFans, LocalDateTime createdAt, UserStatsVO stats) {
         this.id = id;
         this.nickname = nickname;
         this.avatarUrl = avatarUrl;
@@ -161,11 +163,11 @@ public class UserVO {
         this.campusId = campusId;
     }
     
-    public String getCampusName() {
+    public CampusPO.CampuseName getCampusName() {
         return campusName;
     }
     
-    public void setCampusName(String campusName) {
+    public void setCampusName(CampusPO.CampuseName campusName) {
         this.campusName = campusName;
     }
     

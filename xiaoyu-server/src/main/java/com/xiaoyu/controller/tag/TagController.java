@@ -40,11 +40,11 @@ public class TagController {
             tags = objectMapper.convertValue(redisValue, new TypeReference<List<TagsPO>>() {} );
         }
         else{
-            // todo：标签权重没有加上
+            // todo：（暂时不考虑）标签权重没有加上
             tags = yujiTagsService.list();
             // 加入缓存
-            // todo： 写入缓存后，不用修改的哦！！后续把这个代码注释掉
-            redisTempalte.opsForValue().set(TagConstant.TAG_ALL,tags);
+            // todo：（只是提示，不用修改）写入缓存后，不用修改的哦！！后续把这个代码注释掉
+//            redisTempalte.opsForValue().set(TagConstant.TAG_ALL,tags);
         }
 
         return Result.success(tags);

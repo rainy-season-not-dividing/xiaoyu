@@ -16,7 +16,7 @@ public class CampusPO {
     private Long id;
 
     /** 校区名称 */
-    private String name;
+    private CampusPO.CampuseName name;
 
     /** 省 */
     private String province;
@@ -32,4 +32,10 @@ public class CampusPO {
 
     /** 更新时间 */
     private LocalDateTime updatedAt;
+
+    public enum CampuseName{
+        NANHU,       // 南湖校区
+        YUJIATOU,    // 余家头校区
+        MAFANGSHAN;  // 马房山校区
+    }
 }

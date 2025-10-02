@@ -1,15 +1,18 @@
 package com.xiaoyu.controller.user;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.user.BindMobileDTO;
 import com.xiaoyu.dto.user.UserRealNameDTO;
 import com.xiaoyu.dto.user.UserSelfInfoDTO;
 import com.xiaoyu.dto.friend.AddToBlacklistDTO;
+import com.xiaoyu.entity.FriendshipsPO;
 import com.xiaoyu.entity.UsersPO;
 import com.xiaoyu.result.PageResult;
 import com.xiaoyu.result.Result;
 import com.xiaoyu.service.yujiBlacklistsService;
+import com.xiaoyu.service.yujiFriendShipsService;
 import com.xiaoyu.service.yujiUserService;
 import com.xiaoyu.vo.user.BlacklistsVO;
 import com.xiaoyu.vo.user.UserVO;
@@ -40,6 +43,9 @@ public class UserController {
     @Resource
     private RedisUtil redisUtil;
 
+    @Resource
+    private yujiFriendShipsService yujiFriendShipsService;
+
     @GetMapping("/{userId}")
     public Result<UserVO> getUserPublicInfo(@PathVariable Long userId) throws InterruptedException{
         log.info("获取用户的公开信息：{}",userId);
@@ -49,7 +55,16 @@ public class UserController {
                 id-> Collections.singletonList(yujiUserService.getUserPublicInfo(id)),
                 UserConstant.USER_PUBLIC_INFO_TIMEOUT, TimeUnit.SECONDS
         );
-        return Result.success(list!=null?list.getFirst():null);
+        Long currentId = BaseContext.getId();
+        Long smallId = currentId > userId ? userId : currentId;
+        Long bigId = currentId > userId ? currentId : userId;
+        Boolean isFriend = yujiFriendShipsService.exists(new LambdaQueryWrapper<FriendshipsPO>()
+                .eq(FriendshipsPO::getUserId, smallId)
+                .eq(FriendshipsPO::getFriendId, bigId)
+                .eq(FriendshipsPO::getStatus, FriendshipsPO.Status.ACCEPTED));
+        UserVO userVO = list!=null?list.getFirst():null;
+        if(userVO!=null) userVO.setIsFriend(isFriend);
+        return Result.success(userVO);
 //        return Result.success(yujiUserService.getUserPublicInfo(userId));
     }
 

@@ -1,6 +1,7 @@
 package com.xiaoyu.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xiaoyu.dto.friend.ShareFriendDTO;
 import com.xiaoyu.dto.task.PublishTaskDTO;
 import com.xiaoyu.entity.TasksPO;
 import com.xiaoyu.result.PageResult;
@@ -27,4 +28,6 @@ public interface yujiTasksService extends IService<TasksPO> {
     void favoriteTask(Long taskId);
 
     void removeFavoriteTask(Long taskId);
+
+    void shareTask(Long taskId, ShareFriendDTO shareFriendDTO);
 }

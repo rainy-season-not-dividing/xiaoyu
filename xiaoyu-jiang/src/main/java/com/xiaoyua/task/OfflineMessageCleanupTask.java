@@ -11,32 +11,32 @@ import org.springframework.stereotype.Component;
  * 
  * @author xiaoyu
  */
-@Component
-@Slf4j
-public class OfflineMessageCleanupTask {
-    
-    @Autowired
-    private jOfflineMessageService jOfflineMessageService;
-    
-    /**
-     * 清理过期的离线消息
-     * 每小时执行一次
-     */
-    @Scheduled(cron = "0 0 * * * ?")
-    public void cleanExpiredOfflineMessages() {
-        try {
-            log.info("开始清理过期离线消息");
-            
-            int cleanedCount = jOfflineMessageService.cleanExpiredMessages();
-            
-            if (cleanedCount > 0) {
-                log.info("清理过期离线消息完成: 清理数量={}", cleanedCount);
-            } else {
-                log.debug("没有过期的离线消息需要清理");
-            }
-            
-        } catch (Exception e) {
-            log.error("清理过期离线消息失败: error={}", e.getMessage(), e);
-        }
-    }
-}
+//@Component
+//@Slf4j
+//public class OfflineMessageCleanupTask {
+//
+//    @Autowired
+//    private jOfflineMessageService jOfflineMessageService;
+//
+//    /**
+//     * 清理过期的离线消息
+//     * 每小时执行一次
+//     */
+//    @Scheduled(cron = "0 0 * * * ?")
+//    public void cleanExpiredOfflineMessages() {
+//        try {
+//            log.info("开始清理过期离线消息");
+//
+//            int cleanedCount = jOfflineMessageService.cleanExpiredMessages();
+//
+//            if (cleanedCount > 0) {
+//                log.info("清理过期离线消息完成: 清理数量={}", cleanedCount);
+//            } else {
+//                log.debug("没有过期的离线消息需要清理");
+//            }
+//
+//        } catch (Exception e) {
+//            log.error("清理过期离线消息失败: error={}", e.getMessage(), e);
+//        }
+//    }
+//}

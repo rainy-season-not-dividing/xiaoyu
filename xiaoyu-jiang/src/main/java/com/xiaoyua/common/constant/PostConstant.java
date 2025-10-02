@@ -6,4 +6,7 @@ public class PostConstant {
 
     public static final String POST_HOT_KEY_PREFIX = "xiaoyu:post:hot:";
     public static final Long POST_HOT_TIMEOUT = 60 * 60 * 24L;
+
+    public static final String POST_LIST_KEY_PREFIX = "xiaoyu:post:list:";
+    public static final Long POST_LIST_TIMEOUT = 60 * 30L;
 }

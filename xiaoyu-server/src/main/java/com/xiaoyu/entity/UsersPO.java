@@ -36,7 +36,7 @@ public class UsersPO {
 
     /** 所属校区名 */
     @TableField(exist = false)
-    private String campusName;
+    private CampusPO.CampuseName campusName;
 
     /** QQ 授权 openid */
     private String qqOpenid;

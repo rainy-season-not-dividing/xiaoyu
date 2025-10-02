@@ -69,7 +69,8 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
                 .eq(FriendshipsPO::getUserId, smallId)
                 .eq(FriendshipsPO::getFriendId, bigId));
         userVO.setIsFriend(isFriend);
-        // todo:还要拿到用户粉丝、关注数
+        // todo:（暂时不考虑）还要拿到用户粉丝、关注数
+
         return userVO;
     }
 
@@ -79,26 +80,18 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
         Long userId = BaseContext.getId();
         // 封装成PO类
         UsersPO usersPO = BeanUtil.copyProperties(userSelfInfoDTO, UsersPO.class);
-        // 处理文件
-//        List<MultipartFile> files = userSelfInfoDTO.getFiles();
-//        String fileUrl = null;
-//        if (files != null && !files.isEmpty()) {
-//            for (MultipartFile file : files) {
-//                fileUrl = fileService.uploadFile(file, "POST", userId).get("fileUrl").toString();
-//            }
-//        }
 
         usersPO.setAvatarUrl(userSelfInfoDTO.getAvatarUrl());
         // update更新数据
         usersPO.setId(userId);
         // 查询校区是否存在：不存在则新增，存在则直接拿去校区id
-        String campusName = userSelfInfoDTO.getCampusName();
+        CampusPO.CampuseName  campusName = userSelfInfoDTO.getCampusName();
         CampusPO campusPO = campusesService.getOne(new LambdaQueryWrapper<CampusPO>().eq(CampusPO::getName, campusName));
         if(campusPO==null){
             campusPO = new CampusPO();
             campusPO.setName(campusName);
             campusesService.save(campusPO);
-            // todo:校区地址待添加
+            log.error("校区不存在，新增校区");
         }
         usersPO.setCampusId(campusPO.getId());
         saveOrUpdate(usersPO);  // 如果id为空，则新增
@@ -114,7 +107,6 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
         usersPO.setId(BaseContext.getId());
         updateById(usersPO);
         Integer isRealName = usersPO.getIsRealName();
-        // todo: 是否需要返回这个数据
         return isRealName;
     }
 
@@ -123,7 +115,7 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
         UsersPO usersPO = new UsersPO();
         String mobliePhone = bindMobileDTO.getMobile();
         String code = bindMobileDTO.getCode();
-        // todo: 校对验证码
+        // todo:（暂时不需要） 校对验证码
         usersPO.setId(BaseContext.getId());
         usersPO.setMobile(mobliePhone);
         updateById(usersPO);
@@ -132,7 +124,6 @@ public class yujiUserServiceImpl extends ServiceImpl<yujiUserMapper, UsersPO> im
     @Override
     public PageResult<BlacklistsVO> getBlacklist(Integer page, Integer pageSize) {
         // 获取当前用户信息
-        // todo: 待测试
         Long userId = BaseContext.getId();
         // 获取用户黑名单列表，简化逻辑
         Page<BlacklistsVO> blackPageInfo = yujiBlacklistsService.getBlackList(new Page<>(page,pageSize),userId);

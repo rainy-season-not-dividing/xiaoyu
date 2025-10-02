@@ -40,7 +40,7 @@ public class RedisUtil {
     private static final Random RANDOM = new Random();
 
     private static final long SHOP_TTL_MAX_OFFSET = 300;
-    private static final String ID_PREFIX = "thread:id:";
+    private static final String ID_PREFIX = "xiaoyu:lock:threadId:";
 
     @Autowired
     @LazyInit
@@ -145,22 +145,24 @@ public class RedisUtil {
                 .constructParametricType(RedisDataDTO.class, type);
         // 1.1、不存在--控制缓存
         if(redisValue!=null){
+            // 之前查过，为null
             if(redisValue instanceof String && StrUtil.isBlank((String) redisValue)){
                 return null;
             }
         }
         else{
+            // 确实不存在，新建缓存数据
+            boolean getLock = tryLock(keyPrefix+"lock:id" ,5, 10, TimeUnit.SECONDS); // 锁超时5秒，持锁10秒
+            if(!getLock){
+                Thread.sleep(50);
+                return queryWithLogicExpire(keyPrefix, id, type, dbFallBack, time, unit);
+            }
             List<R> dbData = dbFallBack.apply(id);
+            log.info("缓存未加载,{}",dbData);
             if(dbData!=null){
                 RedisDataDTO<R> cacheData = new RedisDataDTO<>();
                 cacheData.setData(dbData);
-                cacheData.setExpireTime(LocalDateTime.now().plusSeconds(CACHE_SHOP_TTL_BASE));
-//                try {
-//                    String json = objectMapper.writerFor(javaType).writeValueAsString(cacheData);
-//                    redisTemplate.opsForValue().set(key, json);
-//                } catch (JsonProcessingException e) {
-//                    throw new RuntimeException("缓存序列化失败", e);
-//                }
+                cacheData.setExpireTime(LocalDateTime.now().plusSeconds(time));
                 redisTemplate.opsForValue().set(key, cacheData);
             }
             else{
@@ -168,51 +170,32 @@ public class RedisUtil {
             }
             return dbData;
         }
+        // 缓存命中
 //        log.info("缓存命中：{}",redisValue);
-        //1.2、存在
-        // 构建RedisDataDTO<List<R>>的完整类型
-        // 3. 反序列化时使用完整类型
-//        RedisDataDTO<R> redisData = null;
-//        try {
-//            // 1. 先整段 JSON 字符串 → JsonNode
-//            // 1. 去掉最外层转义（得到合法 JSON）
-//            String unescaped = objectMapper.readValue(redisValue, String.class);
-//
-//// 2. 再反序列化成对象
-//            redisData = objectMapper.readValue(unescaped, javaType);
-//        } catch (JsonProcessingException e) {
-//            // 数据被污染，淘汰掉
-//            log.error("缓存反序列化失败", e);   // ← 打印完整堆栈
-//            log.error("缓存数据被污染：{}",redisValue);
-//            redisTemplate.delete(key);
-//            return null;
-//        }
-        // 3. 缓存命中 -> 反序列化（Jackson 已帮我们做好）
         RedisDataDTO<R> redisData = objectMapper.convertValue(redisValue,javaType);
 
         List<R> data = redisData.getData();  // 直接获取List<R>
         //1.2.1、判断是否逻辑过期
         // 1.2.1.1、逻辑未过期--返回结果
+
         if(redisData.getExpireTime().isAfter(LocalDateTime.now())){
+            log.info("缓存未过期：{}",redisData);
+            log.info("过期时间:{},现在时间:{}",redisData.getExpireTime(),LocalDateTime.now());
             return data;
         }
         //1.2.1.2、逻辑过期--获取锁异步更新数据，并返回过期结果
-        boolean getLock = tryLock(key ,5, 10, TimeUnit.SECONDS); // 锁超时5秒，持锁10秒
+        boolean getLock = tryLock(keyPrefix+"lock:id" ,5, 10, TimeUnit.SECONDS); // 锁超时5秒，持锁10秒
         if(getLock){
             try{
+                log.info("缓存逻辑过期，开始重建缓存：{}",id);
                 // 异步更新redis,缓存重建
                 cacheRebuildExecutor.submit(()->{
+                    log.info("缓存重建开始：{}",id);
                     List<R> dbData = dbFallBack.apply(id);
                     if(dbData!=null){
                         RedisDataDTO<R> cacheData = new RedisDataDTO<>();
                         cacheData.setData(dbData);
-                        cacheData.setExpireTime(LocalDateTime.now().plusSeconds(CACHE_SHOP_TTL_BASE));
-//                        try {
-//                            String json = objectMapper.writerFor(javaType).writeValueAsString(cacheData);
-//                            redisTemplate.opsForValue().set(key, json);
-//                        } catch (JsonProcessingException e) {
-//                            throw new RuntimeException("缓存序列化失败", e);
-//                        }
+                        cacheData.setExpireTime(LocalDateTime.now().plusSeconds(time));
                         redisTemplate.opsForValue().set(key, cacheData);
                     }
                     else{
@@ -221,11 +204,11 @@ public class RedisUtil {
                 });
             }
             catch(Exception e){
-                // todo: 这里不能简单的抛出异常，还要做后续的异常处理，或者是记录日志什么的
+                log.error("缓存重建异步任务执行失败，key: {}, id: {}", key, id, e);
                 throw new RuntimeException(e);
             }
             finally{
-                unlock(key);
+                unlock(keyPrefix+"lock:id");
             }
         }
         return data;
@@ -300,6 +283,7 @@ public class RedisUtil {
 
     private boolean tryLock(String key, long watiTime, long leaseTime, TimeUnit unit){
         String threadId = ID_PREFIX + Thread.currentThread().getId();
+
         try{
             Boolean success = stringRedisTemplate.opsForValue()
                     .setIfAbsent(key,threadId,leaseTime,unit);

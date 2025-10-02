@@ -21,9 +21,25 @@ public class MessagePO {
     /** 接收者 UID */
     private Long toId;
 
-    /** 消息内容 */
+    /** 消息类型 */
+    @EnumValue
+    private MessageType type;
+
+    /** 消息内容（JSON格式） */
     private String content;
 
     /** 发送时间 */
     private LocalDateTime createdAt;
+
+    /**
+     * 消息类型枚举
+     */
+    public enum MessageType {
+        /** 普通文本消息 */
+        TEXT,
+        /** 动态转发 */
+        POST,
+        /** 任务转发 */
+        TASK
+    }
 }

@@ -23,25 +23,29 @@ public interface jPushService {
                           Long refId, String refType, Long fromUserId);
 
     /**
-     * 推送通知消息（简化版）
-     *
-     * @param userId 用户ID
-     * @param type 通知类型
-     * @param title 通知标题
-     * @param content 通知内容
-     */
-    void pushNotification(Long userId, String type, String title, String content);
-
-    /**
-     * 推送私信消息
+     * 推送私信消息（带引用类型）
      *
      * @param originalMessageId 原始消息ID
      * @param fromUserId 发送者ID
      * @param toUserId 接收者ID
      * @param content 消息内容
+     * @param refType 引用类型：TEXT(文本) 或 SHARE(转发)
      */
     void pushPrivateMessage(Long originalMessageId, Long fromUserId, Long toUserId,
-                            String content);
+                            String content, String refType);
+
+    /**
+     * 推送私信消息（带转发信息）
+     *
+     * @param originalMessageId 原始消息ID
+     * @param fromUserId 发送者ID
+     * @param toUserId 接收者ID
+     * @param content 消息内容
+     * @param refType 消息类型：TEXT(文本)、POST(动态转发) 或 TASK(任务转发)
+     * @param forwardItemId 转发的内容ID
+     */
+    void pushPrivateMessage(Long originalMessageId, Long fromUserId, Long toUserId,
+                            String content, String refType, Long forwardItemId);
 
     /**
      * 推送点赞通知
@@ -113,5 +117,5 @@ public interface jPushService {
      * @param fromUserId 请求用户的ID
      * @param requestMessage 请求信息
      */
-     void pushFriendRequestNotification(Long toUserId, Long fromUserId, String requestMessage);
- }
+    void pushFriendRequestNotification(Long toUserId, Long fromUserId, String requestMessage);
+}

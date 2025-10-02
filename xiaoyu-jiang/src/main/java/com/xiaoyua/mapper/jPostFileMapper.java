@@ -2,6 +2,7 @@ package com.xiaoyua.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xiaoyua.dto.post.PostFileDTO;
+import com.xiaoyua.entity.FilePO;
 import com.xiaoyua.entity.PostFilePO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -28,4 +29,18 @@ public interface jPostFileMapper extends BaseMapper<PostFilePO> {
             "</script>"
     })
     List<PostFileDTO> selectFileByPostIds(@Param("postIds") List<Long> postIds);
+
+    /**
+     * 查询单个动态的文件信息
+     * @param postId 动态ID
+     * @return 文件信息列表
+     */
+    @Select({
+            "SELECT f.id, f.file_url, f.thumb_url, f.size, f.biz_type",
+            "FROM post_files pf",
+            "JOIN files f ON pf.file_id = f.id",
+            "WHERE pf.post_id = #{postId}",
+            "ORDER BY pf.sort"
+    })
+    List<FilePO> selectFilesByPostId(@Param("postId") Long postId);
 }

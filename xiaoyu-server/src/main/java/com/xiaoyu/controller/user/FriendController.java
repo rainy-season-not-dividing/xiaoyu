@@ -28,21 +28,21 @@ public class FriendController {
 
 
     @PostMapping("/request")
-    public Result sendFriendRequest(SendFriendRequestDTO sendFriendRequestDTO) {
+    public Result sendFriendRequest(@RequestBody SendFriendRequestDTO sendFriendRequestDTO) {
         log.info("发送好友请求：{}",sendFriendRequestDTO);
         yujiFriendShipsService.sendFriendRequest(sendFriendRequestDTO);
         return Result.success("好友请求已发送");
     }
 
     @PutMapping("/{friendId}/accept")
-    public Result acceptFriendRequest(@PathVariable("friend_id") Long friendId) {
+    public Result acceptFriendRequest(@PathVariable("friendId") Long friendId) {
         log.info("接受好友请求：{}",friendId);
         yujiFriendShipsService.acceptFriendRequest(friendId);
         return Result.success("已成为好友");
     }
 
     @PutMapping("/{friendId}/refuse")
-    public Result refuseFriendRequest(@PathVariable("friend_id") Long friendId) {
+    public Result refuseFriendRequest(@PathVariable("friendId") Long friendId) {
         log.info("拒绝好友请求：{}",friendId);
         yujiFriendShipsService.refuseFriendRequest(friendId);
         return Result.success("已拒绝好友请求");
@@ -50,7 +50,7 @@ public class FriendController {
 
 
     @DeleteMapping("/{friendId}")
-    public Result deleteFriend(@PathVariable("friend_id") Long friendId) {
+    public Result deleteFriend(@PathVariable("friendId") Long friendId) {
         log.info("删除好友：{}",friendId);
         yujiFriendShipsService.deleteFriendships(friendId);
         return Result.success("已删除好友");

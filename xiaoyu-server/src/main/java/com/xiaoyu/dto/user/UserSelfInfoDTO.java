@@ -1,5 +1,6 @@
 package com.xiaoyu.dto.user;
 
+import com.xiaoyu.entity.CampusPO;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,8 +25,8 @@ public class UserSelfInfoDTO {
     /** 性别：0未知 1男 2女 */
     private Integer gender;
 
-    /** 校区ID */
-    private String campusName;
+    /** 校区名称 */
+    private CampusPO.CampuseName campusName;
 
     /** 手机号可见范围：0公开 1好友 2仅自己 */
     private Integer privacyMobile;

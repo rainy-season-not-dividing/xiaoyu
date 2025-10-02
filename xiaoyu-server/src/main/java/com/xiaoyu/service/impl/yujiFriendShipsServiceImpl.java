@@ -69,7 +69,7 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
         if(friendshipPO != null){
             // 处理已经是好友过了的逻辑
             if(friendshipPO.getStatus() == FriendshipsPO.Status.ACCEPTED) throw new AlreadyBeFriendException("已经是好友啦");
-            if(friendshipPO.getStatus() == FriendshipsPO.Status.PENDING) throw new AlreadySendFriendShipRequestException("已经申请好友了");
+//            if(friendshipPO.getStatus() == FriendshipsPO.Status.PENDING) throw new AlreadySendFriendShipRequestException("已经申请好友了");
         }
         // 发送好友申请通知
         try {
@@ -81,9 +81,12 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
             // 通知发送失败不影响好友申请的主流程，只记录日志
         }
 
+        // 如果已经申请过了，就不再写表了
+        if(friendshipPO != null && friendshipPO.getStatus() == FriendshipsPO.Status.PENDING){
+            return ;
+        }
         // 被拒绝或是被删除过
         FriendshipsPO friendshipsPO = FriendshipsPO.builder()
-                .id(friendshipPO.getId())
                 .userId(Math.min(currentId,friendId))
                 .requesterId(currentId)
                 .status(FriendshipsPO.Status.PENDING)

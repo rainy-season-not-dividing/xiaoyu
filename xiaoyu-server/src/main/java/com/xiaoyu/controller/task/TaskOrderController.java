@@ -23,14 +23,14 @@ public class TaskOrderController {
 
     @PostMapping("/{taskId}")
     public Result<TaskOrdersVO> createTaskOrder(@PathVariable Long taskId){
-        log.info("创建任务订单：{}",taskId);
+        log.info("请求接单：{}",taskId);
         return Result.success("接单请求已发送", yujiTaskOrdersService.createTaskOrder(taskId));
     }
 
     @PutMapping("/{orderId}/accept")
     public Result<TaskOrdersVO> acceptTaskOrder(@PathVariable Long taskOrderId){
         log.info("接受任务订单：{}",taskOrderId);
-        return Result.success("已接收接单请求", yujiTaskOrdersService.acceptTaskOrder(taskOrderId));
+        return Result.success("已接受订单请求", yujiTaskOrdersService.acceptTaskOrder(taskOrderId));
     }
 
     @PutMapping("/{orderId}/refuse")

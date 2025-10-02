@@ -29,6 +29,7 @@ public class GetTasksVO {
     private BigDecimal reward;
 
     /** 任务状态（DRAFT/AUDITING/RECRUIT/RUNNING/FINISH/CLOSED/ARBITRATED） */
+    /** 这个DRAFT大概率是不需要的 */
     private String status;
 
     /** 可见范围（PUBLIC/FRIEND/CAMPUS） */

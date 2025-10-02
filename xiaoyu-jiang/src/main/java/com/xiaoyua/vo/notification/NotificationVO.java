@@ -39,13 +39,11 @@ public class NotificationVO {
     /**
      * 关联业务对象ID
      */
-    @JsonProperty("ref_id")
     private Long refId;
     
     /**
      * 关联业务类型：POST动态 TASK任务 COMMENT评论
      */
-    @JsonProperty("ref_type")
     private String refType;
     
     /**
@@ -57,13 +55,11 @@ public class NotificationVO {
      * 通知时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonProperty("created_at")
     private LocalDateTime createdAt;
     
     /**
      * 来源用户信息（如果是用户互动类通知）
      */
-    @JsonProperty("from_user")
     private UserSimpleVO fromUser;
     
     /**

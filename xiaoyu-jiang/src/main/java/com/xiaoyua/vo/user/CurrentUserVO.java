@@ -1,6 +1,8 @@
 package com.xiaoyua.vo.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.xiaoyua.entity.CampusPO;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -44,10 +46,10 @@ public class CurrentUserVO extends UserVO {
     }
     
     public CurrentUserVO(Long id, String nickname, String avatarUrl, LocalDate birthday, String mobile, Integer gender,
-                        Long campusId, String campusName, Integer isRealName, Integer privacyMobile,
-                        Integer privacyBirthday, Integer privacyFans, LocalDateTime createdAt, UserStatsVO stats,
-                        String qqOpenid, String realName, String idCardNo, Integer status,
-                        LocalDateTime updatedAt) {
+                         Long campusId, CampusPO.CampuseName campusName, Integer isRealName, Integer privacyMobile,
+                         Integer privacyBirthday, Integer privacyFans, LocalDateTime createdAt, UserStatsVO stats,
+                         String qqOpenid, String realName, String idCardNo, Integer status,
+                         LocalDateTime updatedAt) {
         super(id, nickname, avatarUrl, birthday, mobile, gender, campusId, campusName, isRealName,
               privacyMobile, privacyBirthday, privacyFans, createdAt, stats);
         this.qqOpenid = qqOpenid;

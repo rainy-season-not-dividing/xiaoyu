@@ -39,8 +39,7 @@ public class jPushServiceImpl implements jPushService {
             }
 
             NotificationMessage message = new NotificationMessage(
-                    userId, type, title, content, refId, refType, fromUserId
-            );
+                    userId, type, title, content, refId, refType, fromUserId);
 
             // 如果有发送者信息，填充发送者详情
             if (fromUserId != null) {
@@ -62,18 +61,27 @@ public class jPushServiceImpl implements jPushService {
         }
     }
 
+
     @Override
-    public void pushNotification(Long userId, String type, String title, String content) {
-        pushNotification(userId, type, title, content, null, null, null);
+    public void pushPrivateMessage(Long originalMessageId, Long fromUserId, Long toUserId,
+                                   String content, String refType) {
+        // 委托给带转发信息的重载方法，转发信息为null
+        pushPrivateMessage(originalMessageId, fromUserId, toUserId, content, refType, null);
     }
 
     @Override
     public void pushPrivateMessage(Long originalMessageId, Long fromUserId, Long toUserId,
-                                   String content) {
+                                   String content, String refType, Long forwardItemId) {
         try {
             PrivateMessage message = new PrivateMessage(
-                    originalMessageId, fromUserId, toUserId, content
-            );
+                    originalMessageId, fromUserId, toUserId, content);
+            // 设置消息类型
+            message.setMessageType(refType == null ? "TEXT" : refType);
+
+            // 设置转发信息（仅当messageType为POST或TASK时）
+            if ("POST".equals(refType) || "TASK".equals(refType)) {
+                message.setForwardItemId(forwardItemId);
+            }
 
             // 填充发送者信息
             UserPO fromUser = jUserMapper.selectById(fromUserId);
@@ -84,12 +92,14 @@ public class jPushServiceImpl implements jPushService {
 
             messageProducer.sendMessagePush(message);
 
-            log.info("推送私信消息成功: originalMessageId={}, fromUserId={}, toUserId={}",
-                    originalMessageId, fromUserId, toUserId);
+            log.info(
+                    "推送私信消息成功: originalMessageId={}, fromUserId={}, toUserId={}, messageType={}, forwardItemId={}",
+                    originalMessageId, fromUserId, toUserId, message.getMessageType(), forwardItemId);
 
         } catch (Exception e) {
-            log.error("推送私信消息失败: originalMessageId={}, fromUserId={}, toUserId={}, error={}",
-                    originalMessageId, fromUserId, toUserId, e.getMessage(), e);
+            log.error(
+                    "推送私信消息失败: originalMessageId={}, fromUserId={}, toUserId={}, refType={}, forwardItemId={}, error={}",
+                    originalMessageId, fromUserId, toUserId, refType, forwardItemId, e.getMessage(), e);
         }
     }
 
@@ -131,18 +141,24 @@ public class jPushServiceImpl implements jPushService {
 
     @Override
     public void pushShareNotification(Long toUserId, Long fromUserId, Long itemId, String itemType) {
+        log.info("开始推送转发通知: toUserId={}, fromUserId={}, itemId={}, itemType={}",
+                toUserId, fromUserId, itemId, itemType);
+
         UserPO fromUser = jUserMapper.selectById(fromUserId);
         String fromUserNickname = fromUser != null ? fromUser.getNickname() : "某用户";
 
-        String title = "收到新的转发";
-        String content = String.format("%s 转发了你的%s", fromUserNickname, getContentTypeName(itemType));
+        String content = String.format("%s 转发了一个%s给你", fromUserNickname, getContentTypeName(itemType));
 
-        pushNotification(toUserId, "INTERACTION", title, content, itemId, itemType, fromUserId);
+        log.info("转发通知内容: toUserId={}, content={}", toUserId, content);
+
+        pushPrivateMessage(itemId, fromUserId, toUserId, content, itemType, itemId);
+
+        log.info("转发通知推送完成: toUserId={}, fromUserId={}", toUserId, fromUserId);
     }
 
     @Override
     public void pushSystemNotification(Long userId, String title, String content) {
-        pushNotification(userId, "SYSTEM", title, content);
+        pushNotification(userId, "SYSTEM", title, content,null,null,null);
     }
 
     @Override

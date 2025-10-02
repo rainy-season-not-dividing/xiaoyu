@@ -97,6 +97,7 @@ public class NotificationConsumer {
         notification.setTitle(message.getTitle());
         notification.setContent(message.getContent());
         notification.setRefId(message.getRefId());
+        notification.setFromUserId(message.getFromUserId());
         
         // 设置关联类型
         if (message.getRefType() != null) {

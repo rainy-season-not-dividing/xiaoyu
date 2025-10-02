@@ -35,7 +35,11 @@ public class PrivateMessage implements Serializable {
     /** 消息内容 */
     private String content;
 
+    /** 消息类型：TEXT(文本)、POST(动态转发) 或 TASK(任务转发) */
+    private String messageType = "TEXT";
 
+    /** 转发的内容ID，仅当messageType为POST或TASK时有效 */
+    private Long forwardItemId;
 
     /** 发送者昵称 */
     private String fromUserNickname;

@@ -1,11 +1,14 @@
 package com.xiaoyua.controller.dynamic;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaoyu.common.utils.RedisUtil;
 import com.xiaoyua.common.constant.PostConstant;
 import com.xiaoyua.context.BaseContext;
 import com.xiaoyua.dto.post.PostCreateDTO;
 import com.xiaoyua.dto.post.PostForm;
 import com.xiaoyua.dto.post.PostUpdateDTO;
+import com.xiaoyua.dto.post.ShareCreateDTO;
 import com.xiaoyua.entity.FilePO;
 import com.xiaoyua.mapper.jPostStatMapper;
 import com.xiaoyua.service.jPostService;
@@ -17,6 +20,7 @@ import com.xiaoyua.vo.common.PageResult;
 import com.xiaoyua.vo.post.PostVO;
 import com.xiaoyua.result.Result;
 import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -39,6 +43,7 @@ import jakarta.validation.constraints.Min;
 @Slf4j
 @Validated
 @Tag(name = "动态管理", description = "动态相关接口")
+@RequiredArgsConstructor
 public class PostController {
     @Autowired
     private jPostService jPostService;
@@ -65,9 +70,11 @@ public class PostController {
     @Resource
     private  jPostStatMapper postStatMapper;
 
+    private final ObjectMapper objectMapper;
 
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+
+    @PostMapping()
     @Operation(summary = "发布动态（@ModelAttribute 混合表单：表单字段 + files）")
     public Result<PostVO> createPost(@RequestBody PostForm form) {
         log.info("createPost,{form}",form);
@@ -82,19 +89,6 @@ public class PostController {
         dto.setPoiLng(form.getPoiLng());
         dto.setPoiName(form.getPoiName());
 
-        // 处理文件
-//        List<MultipartFile> files = form.getFiles();
-//        if (files != null && !files.isEmpty()) {
-//            List<Long> fileIds = new ArrayList<>();
-//            for (MultipartFile file : files) {
-//                log.info("这里的userId: {}",userId);
-//                var fileVO = jFileService.uploadFile(file, "POST", userId);
-//                if (fileVO != null && fileVO.getId() != null) {
-//                    fileIds.add(fileVO.getId());
-//                }
-//            }
-//            dto.setFileIds(fileIds);
-//        }
         Long currentId = BaseContext.getCurrentId();
         List<FilePO> fileList = form.getFiles().stream().map(
                 fileUrl -> FilePO.builder().userId(currentId).fileUrl(fileUrl).build()
@@ -153,16 +147,28 @@ public class PostController {
 
     @PostMapping("/{post_id}/share")
     @Operation(summary = "转发动态")
-    public Result addShare(@PathVariable("post_id") @Min(1) Long postId){
-        log.info("addShare postId={}", postId);
-        jShareService.addShare(postId, BaseContext.getCurrentId());
+    public Result<Map<String, Object>> addShare(@PathVariable("post_id") @Min(1) Long postId,
+                                                @RequestBody(required = false) ShareCreateDTO shareDTO) {
+        log.info("addShare postId={}, shareDTO={}", postId, shareDTO);
+
+        Long userId = BaseContext.getCurrentId();
+
+        if (shareDTO != null) {
+            // 使用新版本接口，支持指定被转发者和转发附言
+            jShareService.addShare(postId, userId, shareDTO.getShareUserIds(), shareDTO.getReason());
+        } else {
+            // 兼容旧版本，不指定被转发者
+            jShareService.addShare(postId, userId);
+        }
+
+        // 返回最新的转发数量
         long shareCount = jShareService.getShareCount(postId, "POST");
-        return Result.success("转发成功", Map.of("shareCnt", shareCount));
+        return Result.success("转发成功", Map.of("share_cnt", shareCount));
     }
 
     @GetMapping("/hot")
     @Operation(summary = "获取热门动态（按浏览数倒序，默认前10条）")
-    public Result<List<PostVO>> getHotPosts(@RequestParam(value = "limit", required = false) Integer limit) throws InterruptedException{
+    public Result<List<PostVO>> getHotPosts(@RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit) throws InterruptedException{
         log.info("listHot limit={}", limit);
 //        var list = jPostService.listHot(limit);
 
@@ -177,12 +183,25 @@ public class PostController {
 
     @GetMapping
     @Operation(summary = "获取全部动态列表")
-    public Result getAllPosts(@RequestParam(value = "page", required = false) Integer page,
+    public Result getAllPosts(@RequestParam(value = "page", required = false,defaultValue = "1") Integer page,
                               @RequestParam(value = "size", required = false) Integer size,
-                              @RequestParam(value = "sort", required = false) String sort) {
+                              @RequestParam(value = "sort", required = false) String sort) throws InterruptedException {
         log.info("listAll page={}, size={}, sort={}", page, size, sort);
-        var pageResult = jPostService.listAll(page, size, sort);
-        return Result.success("success", pageResult);
+//        var pageResult = jPostService.listAll(page, size, sort);
+        // 加入redis缓存
+
+        List<PageResult<PostVO>> result = (List<PageResult<PostVO>>)(List<?>)redisUtil.<PageResult, Integer>queryWithLogicExpire(
+                PostConstant.POST_LIST_KEY_PREFIX,
+                page, PageResult.class,
+                (x)-> {
+                    PageResult<PostVO> pageResult = jPostService.listAll(page, size, sort);
+                    return Collections.singletonList(pageResult);
+                },
+                PostConstant.POST_LIST_TIMEOUT, TimeUnit.SECONDS
+        );
+
+
+        return Result.success("success", result!=null?result.getFirst():null);
     }
 
     @GetMapping("/user/{user_id}")

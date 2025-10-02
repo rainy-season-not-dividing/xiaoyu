@@ -2,6 +2,7 @@ package com.xiaoyua.vo.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.xiaoyua.entity.CampusPO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -60,7 +61,7 @@ public class UserSearchVO {
      */
     @JsonProperty("campus_name")
     @Schema(description = "校区名称", example = "北京校区")
-    private String campusName;
+    private CampusPO.CampuseName campusName;
 
     /**
      * 是否实名认证：0-未认证，1-已认证
