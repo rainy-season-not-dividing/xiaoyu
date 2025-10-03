@@ -132,7 +132,8 @@ public class RedisUtil {
     public <R,ID> List<R> queryWithLogicExpire(
             String keyPrefix,
             ID id,
-            Class<R> type,
+//            Class<R> type,
+            TypeReference<R> type,
             Function<ID,List<R>> dbFallBack,
             Long time,
             TimeUnit unit
@@ -141,8 +142,10 @@ public class RedisUtil {
         String key = keyPrefix + id;
         Object redisValue = redisTemplate.opsForValue().get(key);
         // 构造 JavaType：RedisDataDTO<R>
+//        JavaType javaType = objectMapper.getTypeFactory()
+//                .constructParametricType(RedisDataDTO.class, type);
         JavaType javaType = objectMapper.getTypeFactory()
-                .constructParametricType(RedisDataDTO.class, type);
+                .constructParametricType(RedisDataDTO.class, objectMapper.getTypeFactory().constructType(type));
         // 1.1、不存在--控制缓存
         if(redisValue!=null){
             // 之前查过，为null
@@ -158,7 +161,6 @@ public class RedisUtil {
                 return queryWithLogicExpire(keyPrefix, id, type, dbFallBack, time, unit);
             }
             List<R> dbData = dbFallBack.apply(id);
-            log.info("缓存未加载,{}",dbData);
             if(dbData!=null){
                 RedisDataDTO<R> cacheData = new RedisDataDTO<>();
                 cacheData.setData(dbData);
@@ -179,15 +181,12 @@ public class RedisUtil {
         // 1.2.1.1、逻辑未过期--返回结果
 
         if(redisData.getExpireTime().isAfter(LocalDateTime.now())){
-            log.info("缓存未过期：{}",redisData);
-            log.info("过期时间:{},现在时间:{}",redisData.getExpireTime(),LocalDateTime.now());
             return data;
         }
         //1.2.1.2、逻辑过期--获取锁异步更新数据，并返回过期结果
         boolean getLock = tryLock(keyPrefix+"lock:id" ,5, 10, TimeUnit.SECONDS); // 锁超时5秒，持锁10秒
         if(getLock){
             try{
-                log.info("缓存逻辑过期，开始重建缓存：{}",id);
                 // 异步更新redis,缓存重建
                 cacheRebuildExecutor.submit(()->{
                     log.info("缓存重建开始：{}",id);

@@ -39,8 +39,11 @@ public class RedisConfiguration {
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 // 关键：忽略 POJO 中不认识的字段
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
-
-        // 不加这种全局改变的，会导致字段污染，直接修改DTO类，让他在写入redis前，加上类的信息即可。
+        /**
+         * 不加这种全局改变的，会导致字段污染，直接修改DTO类，让他在写入redis前，加上类的信息即可。
+         *   打开后，所有没有被 @JsonTypeInfo 显式覆盖的 非 final 类型（List、Map、你的自定义 DTO …）
+         *   都会在 JSON 里多出一个 @class 字段。
+         */
 //                .activateDefaultTyping(
 //                        LaissezFaireSubTypeValidator.instance,
 //                        ObjectMapper.DefaultTyping.NON_FINAL,

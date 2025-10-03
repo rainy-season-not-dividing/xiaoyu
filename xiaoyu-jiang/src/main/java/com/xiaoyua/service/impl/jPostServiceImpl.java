@@ -363,8 +363,10 @@ public class jPostServiceImpl implements jPostService {
         likeService.deleteLike(postId, userId, "POST");
         favService.deleteFavorite(postId, userId);
 
-        // todo: 删除缓存
+        // 删除redis缓存
         redisTemplate.delete(PostConstant.POST_DETAIL_KEY_PREFIX + postId);
+        // 删除es中对应的记录
+        repository.deleteById(postId);
         return;
     }
 

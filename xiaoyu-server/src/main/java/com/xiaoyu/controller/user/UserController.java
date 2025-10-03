@@ -2,6 +2,7 @@ package com.xiaoyu.controller.user;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.user.BindMobileDTO;
 import com.xiaoyu.dto.user.UserRealNameDTO;
@@ -51,7 +52,9 @@ public class UserController {
         log.info("获取用户的公开信息：{}",userId);
         List<UserVO> list = redisUtil.<UserVO, Long>queryWithLogicExpire(
                 UserConstant.USER_PUBLIC_INFO_PREFIX,
-                userId, UserVO.class,
+                userId,
+//                UserVO.class,
+                new TypeReference<UserVO>() {},
                 id-> Collections.singletonList(yujiUserService.getUserPublicInfo(id)),
                 UserConstant.USER_PUBLIC_INFO_TIMEOUT, TimeUnit.SECONDS
         );
@@ -75,7 +78,9 @@ public class UserController {
 //        Long currentId = 1L;
         List<UsersPO> list = redisUtil.<UsersPO, Long>queryWithLogicExpire(
                 UserConstant.USER_SELF_INFO_PREFIX,
-                currentId, UsersPO.class,
+                currentId,
+//                UsersPO.class,
+                new TypeReference<UsersPO>() {},
                 id-> {
                     UsersPO user = yujiUserService.getUserSelfInfo(id);
                     List<UsersPO> resultList = new ArrayList<>();

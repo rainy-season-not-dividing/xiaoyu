@@ -6,6 +6,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.xiaoyu.constant.TaskConstant;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.dto.friend.ShareFriendDTO;
@@ -158,11 +159,13 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
 //        GetTasksVO taskInfo = yujiTasksMapper.getTask(taskId);
         List<GetTasksVO> list = redisUtil.<GetTasksVO, Long>queryWithLogicExpire(
                 TaskConstant.TASK_DETAIL_PREFIX,
-                taskId, GetTasksVO.class,
-                id-> {
+                taskId,
+//                GetTasksVO.class,
+                new TypeReference<GetTasksVO>() {},
+                id -> {
                     GetTasksVO taskInfo = yujiTasksMapper.getTask(id);
                     List<GetTasksVO> resultList = new ArrayList<>();
-                    if(taskInfo != null){
+                    if (taskInfo != null) {
                         resultList.add(taskInfo);
                         return resultList;
                     }

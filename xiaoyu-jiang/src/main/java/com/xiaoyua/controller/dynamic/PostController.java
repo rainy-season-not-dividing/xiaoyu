@@ -1,5 +1,6 @@
 package com.xiaoyua.controller.dynamic;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiaoyu.common.utils.RedisUtil;
@@ -174,8 +175,10 @@ public class PostController {
 
         List<PostVO> list = redisUtil.<PostVO, Integer>queryWithLogicExpire(
                 PostConstant.POST_HOT_KEY_PREFIX,
-                limit, PostVO.class,
-                id->jPostService.listHot(id),
+                limit,
+//                PostVO.class,
+                new TypeReference<PostVO>() {},
+                id -> jPostService.listHot(id),
                 PostConstant.POST_HOT_TIMEOUT, TimeUnit.SECONDS
         );
         return Result.success("success", list);
@@ -190,17 +193,17 @@ public class PostController {
 //        var pageResult = jPostService.listAll(page, size, sort);
         // 加入redis缓存
 
-        List<PageResult<PostVO>> result = (List<PageResult<PostVO>>)(List<?>)redisUtil.<PageResult, Integer>queryWithLogicExpire(
+        List<PageResult<PostVO>> result = redisUtil.<PageResult<PostVO>, Integer>queryWithLogicExpire(
                 PostConstant.POST_LIST_KEY_PREFIX,
-                page, PageResult.class,
+                page,
+//                PageResult.class,
+                new TypeReference<PageResult<PostVO>>() {},
                 (x)-> {
                     PageResult<PostVO> pageResult = jPostService.listAll(page, size, sort);
                     return Collections.singletonList(pageResult);
                 },
                 PostConstant.POST_LIST_TIMEOUT, TimeUnit.SECONDS
         );
-
-
         return Result.success("success", result!=null?result.getFirst():null);
     }
 
@@ -229,7 +232,9 @@ public class PostController {
 //            PostVO postVO = jPostService.getPostDetail(postId);
             List<PostVO> list = redisUtil.<PostVO, Long>queryWithLogicExpire(
                     PostConstant.POST_DETAIL_KEY_PREFIX,
-                    postId, PostVO.class,
+                    postId,
+//                    PostVO.class,
+                    new TypeReference<PostVO>() {},
                     id-> {
                         PostVO postVo =  jPostService.getPostDetail(id);
                         List<PostVO> postList = new ArrayList<>();

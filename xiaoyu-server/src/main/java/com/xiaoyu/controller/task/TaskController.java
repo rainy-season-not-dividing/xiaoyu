@@ -1,6 +1,7 @@
 package com.xiaoyu.controller.task;
 
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.xiaoyu.common.utils.RedisUtil;
 import com.xiaoyu.constant.TaskConstant;
 import com.xiaoyu.dto.friend.SendFriendRequestDTO;
@@ -53,9 +54,11 @@ public class TaskController {
             ) throws InterruptedException {
         log.info("获取任务列表");
         // 加入redis缓存
-        List<PageResult<GetTasksVO>> result = (List<PageResult<GetTasksVO>>)(List<?>) redisUtil.<PageResult, Integer>queryWithLogicExpire(
+        List<PageResult<GetTasksVO>> result = redisUtil.<PageResult<GetTasksVO>, Integer>queryWithLogicExpire(
                 TaskConstant.TASK_LIST_PREFIX,
-                page, PageResult.class,
+                page,
+//                PageResult.class,
+                new TypeReference<PageResult<GetTasksVO>>(){},
                 (currentPage)-> {
                     PageResult<GetTasksVO> pageResult = yujiTasksService.getTasks(page,size,status,keyword,tagId);
                     return Collections.singletonList(pageResult);
