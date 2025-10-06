@@ -30,19 +30,6 @@ public class AuthController {
     @PostMapping("/password/login")
     public Result<LoginVO> passwordLogin(@RequestBody PasswordLoginDTO loginDTO) {
         try {
-            // 基本参数验证
-            if (loginDTO.getAccount() == null || loginDTO.getAccount().trim().isEmpty()) {
-                return Result.error("用户名不能为空");
-            }
-            if (loginDTO.getPassword() == null || loginDTO.getPassword().trim().isEmpty()) {
-                return Result.error("密码不能为空");
-            }
-            if (loginDTO.getAccount().length() < 3 || loginDTO.getAccount().length() > 50) {
-                return Result.error("用户名长度必须在3-50个字符之间");
-            }
-            if (loginDTO.getPassword().length() < 6 || loginDTO.getPassword().length() > 20) {
-                return Result.error("密码长度必须在6-20个字符之间");
-            }
 
             LoginVO loginVO = jAuthService.passwordLogin(loginDTO);
 
@@ -98,6 +85,15 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public Result<String> logout() {
+        try {
+            Long userId = BaseContext.getCurrentId();
+            log.info("用户退出登录: {}", userId);
+            // 删除Redis中的用户信息
+            jAuthService.logout(userId);
+        } catch (Exception e) {
+            log.error("用户退出登录失败: {}", e.getMessage());
+            return Result.error(e.getMessage());
+        }
         return Result.success("退出登录成功");
     }
 }

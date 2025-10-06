@@ -87,17 +87,20 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
         // 封装task_files实体类
         Long taskId = tasksPO.getId();
 
-        List<FilesPO> fileList = publishTaskDTO.getFileUrls().stream().map(
-                fileUrl -> FilesPO.builder().userId(currentId).fileUrl(fileUrl).bizType(FilesPO.BizType.TASK).build()
-        ).toList();
-        yujiFilesService.saveBatch(fileList);
-        List<Long> fileIds = fileList.stream().map(FilesPO::getId).toList();
-        if(CollUtil.isNotEmpty(fileIds)){
-            List<TaskFilesPO> taskFilesPOList = fileIds.stream()
-                    .map(fileId->TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
-                    .toList();
-            yujiTaskFilesService.saveBatch(taskFilesPOList);
+        if(CollUtil.isNotEmpty(publishTaskDTO.getFileUrls())){
+            List<FilesPO> fileList = publishTaskDTO.getFileUrls().stream().map(
+                    fileUrl -> FilesPO.builder().userId(currentId).fileUrl(fileUrl).bizType(FilesPO.BizType.TASK).build()
+            ).toList();
+            yujiFilesService.saveBatch(fileList);
+            List<Long> fileIds = fileList.stream().map(FilesPO::getId).toList();
+            if(CollUtil.isNotEmpty(fileIds)){
+                List<TaskFilesPO> taskFilesPOList = fileIds.stream()
+                        .map(fileId->TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
+                        .toList();
+                yujiTaskFilesService.saveBatch(taskFilesPOList);
+            }
         }
+
         // 封装tag_items实体类
         List<Integer> tagIds = publishTaskDTO.getTagIds();
         if(CollUtil.isNotEmpty(tagIds)){
@@ -123,7 +126,6 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
         // 封装Page
         Page<GetTasksVO> pageSet = Page.of(page,size);
         // mysql查询，自定义sql语句
-        // todo: redis优化，减轻数据库压力
         Page<GetTasksVO> pageInfo = yujiTasksMapper.getTasks(pageSet,status,keyword,tagId,null);
         // 返回结果
         return new PageResult<>(pageInfo.getRecords(),page,size,pageInfo.getTotal());
@@ -207,15 +209,18 @@ public class yujiTasksServiceImpl extends ServiceImpl<yujiTasksMapper, TasksPO> 
 //                fileIds.add((Long) yujiFilesService.uploadFile(file, "POST", currentId).get("fileId"));
 //            }
 //        }
-        List<FilesPO> fileList = newTaskDTO.getFileUrls().stream().map(
-                fileUrl -> FilesPO.builder().userId(currentId).fileUrl(fileUrl).build()
-        ).toList();
-        yujiFilesService.saveBatch(fileList);
-        List<Long> fileIds = fileList.stream().map(FilesPO::getId).toList();
-        List<TaskFilesPO> taskFilesPOList = fileIds.stream()
-                .map(fileId -> TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
-                .toList();
-        yujiTaskFilesService.saveBatch(taskFilesPOList);
+        if (CollUtil.isNotEmpty(newTaskDTO.getFileUrls())){
+            List<FilesPO> fileList = newTaskDTO.getFileUrls().stream().map(
+                    fileUrl -> FilesPO.builder().userId(currentId).fileUrl(fileUrl).build()
+            ).toList();
+            yujiFilesService.saveBatch(fileList);
+            List<Long> fileIds = fileList.stream().map(FilesPO::getId).toList();
+            List<TaskFilesPO> taskFilesPOList = fileIds.stream()
+                    .map(fileId -> TaskFilesPO.builder().taskId(taskId).fileId(fileId).build())
+                    .toList();
+            yujiTaskFilesService.saveBatch(taskFilesPOList);
+        }
+
         yujiTagItemsService.remove(new LambdaQueryWrapper<TagItemsPO>().eq(TagItemsPO::getItemId,taskId));
         List<TagItemsPO> tagItemsPOList = newTaskDTO.getTagIds().stream()
                 .map(tagId -> TagItemsPO.builder().itemId(taskId).tagId(tagId).build())

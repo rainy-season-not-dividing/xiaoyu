@@ -37,14 +37,14 @@ public class jMessageServiceImpl implements jMessageService {
     @Autowired
     private jFriendMapper jFriendMapper;
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+//    @Autowired
+//    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private jPushService jPushService;
 
-    private static final String UNREAD_COUNT_KEY = "message:unread:";
-    private static final String FRIEND_CACHE_KEY = "friend:relation:";
+//    private static final String UNREAD_COUNT_KEY = "message:unread:";
+//    private static final String FRIEND_CACHE_KEY = "friend:relation:";
 
     @Override
     @Transactional
@@ -54,10 +54,10 @@ public class jMessageServiceImpl implements jMessageService {
             throw new RuntimeException("只能向好友发送私信");
         }
 
-        // 更新接收者未读消息数量缓存
-        String unreadKey = UNREAD_COUNT_KEY + messageDTO.getToId();
-        redisTemplate.opsForValue().increment(unreadKey);
-        redisTemplate.expire(unreadKey, 7, TimeUnit.DAYS);
+//        // 更新接收者未读消息数量缓存
+//        String unreadKey = UNREAD_COUNT_KEY + messageDTO.getToId();
+//        redisTemplate.opsForValue().increment(unreadKey);
+//        redisTemplate.expire(unreadKey, 7, TimeUnit.DAYS);
 
         // 通过MQ推送私信消息
         try {
@@ -116,16 +116,16 @@ public class jMessageServiceImpl implements jMessageService {
         // 标记消息为已读
         int count = jMessageMapper.markMessagesAsRead(fromUserId, userId);
 
-        if (count > 0) {
-            // 更新Redis中的未读消息数量
-            String unreadKey = UNREAD_COUNT_KEY + userId;
-            Long currentCount = (Long) redisTemplate.opsForValue().get(unreadKey);
-            if (currentCount != null && currentCount > count) {
-                redisTemplate.opsForValue().set(unreadKey, currentCount - count);
-            } else {
-                redisTemplate.delete(unreadKey);
-            }
-        }
+//        if (count > 0) {
+//            // 更新Redis中的未读消息数量
+//            String unreadKey = UNREAD_COUNT_KEY + userId;
+//            Long currentCount = (Long) redisTemplate.opsForValue().get(unreadKey);
+//            if (currentCount != null && currentCount > count) {
+//                redisTemplate.opsForValue().set(unreadKey, currentCount - count);
+//            } else {
+//                redisTemplate.delete(unreadKey);
+//            }
+//        }
 
         return count;
     }
@@ -133,12 +133,12 @@ public class jMessageServiceImpl implements jMessageService {
     @Override
     public Long getUnreadMessageCount(Long userId) {
         // 先从Redis缓存中获取
-        String unreadKey = UNREAD_COUNT_KEY + userId;
-        Long cachedCount = (Long) redisTemplate.opsForValue().get(unreadKey);
+//        String unreadKey = UNREAD_COUNT_KEY + userId;
+//        Long cachedCount = (Long) redisTemplate.opsForValue().get(unreadKey);
 
-        if (cachedCount != null) {
-            return cachedCount;
-        }
+//        if (cachedCount != null) {
+//            return cachedCount;
+//        }
 
         // 缓存中没有，从数据库查询
         Long dbCount = jMessageMapper.getUnreadCount(userId);
@@ -146,23 +146,23 @@ public class jMessageServiceImpl implements jMessageService {
             dbCount = 0L;
         }
 
-        // 更新缓存
-        if (dbCount > 0) {
-            redisTemplate.opsForValue().set(unreadKey, dbCount, 7, TimeUnit.DAYS);
-        }
+//        // 更新缓存
+//        if (dbCount > 0) {
+//            redisTemplate.opsForValue().set(unreadKey, dbCount, 7, TimeUnit.DAYS);
+//        }
 
         return dbCount;
     }
 
     @Override
     public boolean isFriend(Long userId1, Long userId2) {
-        // 先从Redis缓存中查询
-        String cacheKey = FRIEND_CACHE_KEY + Math.min(userId1, userId2) + ":" + Math.max(userId1, userId2);
-        Boolean cached = (Boolean) redisTemplate.opsForValue().get(cacheKey);
+//        // 先从Redis缓存中查询
+//        String cacheKey = FRIEND_CACHE_KEY + Math.min(userId1, userId2) + ":" + Math.max(userId1, userId2);
+//        Boolean cached = (Boolean) redisTemplate.opsForValue().get(cacheKey);
 
-        if (cached != null) {
-            return cached;
-        }
+//        if (cached != null) {
+//            return cached;
+//        }
 
         // 缓存中没有，从数据库查询
         QueryWrapper<FriendPO> queryWrapper = new QueryWrapper<>();
@@ -176,8 +176,8 @@ public class jMessageServiceImpl implements jMessageService {
         long count = jFriendMapper.selectCount(queryWrapper);
         boolean isFriend = count > 0;
 
-        // 更新缓存，缓存30分钟
-        redisTemplate.opsForValue().set(cacheKey, isFriend, 30, TimeUnit.MINUTES);
+//        // 更新缓存，缓存30分钟
+//        redisTemplate.opsForValue().set(cacheKey, isFriend, 30, TimeUnit.MINUTES);
 
         return isFriend;
     }

@@ -186,7 +186,7 @@ public class jPushServiceImpl implements jPushService {
                 truncateContent(requestMessage, 50));
 
         // 使用INTERACTION类型，refType为FRIEND_REQUEST
-        pushNotification(toUserId, "INTERACTION", title, content, fromUserId, "FRIEND_REQUEST", fromUserId);
+        pushNotification(toUserId, "INTERACTION", title, content, fromUserId, "CHAT", fromUserId);
 
         log.info("推送好友申请通知成功: toUserId={}, fromUserId={}", toUserId, fromUserId);
     }

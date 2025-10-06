@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoyu.common.utils.RedisIdUtil;
+import com.xiaoyu.constant.TaskConstant;
 import com.xiaoyu.context.BaseContext;
 import com.xiaoyu.entity.TaskOrdersPO;
 import com.xiaoyu.entity.TaskReviewsPO;
@@ -21,6 +22,7 @@ import com.xiaoyu.vo.task.TaskOrdersVO;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -47,6 +49,9 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
     @Resource
     private RedisIdUtil redisIdUtil;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
 //    private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
 //    static{
 //        SECKILL_SCRIPT = new DefaultRedisScript<>();
@@ -66,6 +71,7 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
          * 1、任务存在且 处于RECRUIT 招聘状态
          * 2、任务接收者不是任务发布者
          * 3、把 4 个判断 + 后续下单的 SQL 全部放进同一事务，利用 MySQL 的行锁（SELECT … FOR UPDATE）把并发请求串行化；
+         * 4、任务状态修改为 RUNNING 进行中的状态
          *
          *
          * 1、创建任务订单表，并将状态设置为WAIT_ACCEPT等待接受状态
@@ -125,7 +131,6 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
             if (task.getStatus() != TasksPO.Status.RECRUIT) {
                 throw new BadRequestException("任务状态异常，不处于招聘状态");
             }
-
             // 2. 行锁订单（如果订单表有唯一索引可以直接插，利用唯一索引冲突抛异常）
             TaskOrdersPO exist = getOne(
                     new LambdaQueryWrapper<TaskOrdersPO>()
@@ -145,17 +150,23 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
             TaskOrdersPO orderPO = TaskOrdersPO.builder()
                     .taskId(taskId)
                     .receiverId(currentId)
-                    .status(TaskOrdersPO.Status.WAIT_ACCEPT).build();
+                    .status(TaskOrdersPO.Status.ACCEPTED).build();
             save(orderPO);
+            // 修改任务状态
+            task.setStatus(TasksPO.Status.RUNNING);
+            yujiTasksService.updateById(task);
+            // 删除缓存
+            stringRedisTemplate.delete(TaskConstant.TASK_DETAIL_PREFIX + taskId);
 
             return new TaskOrdersVO(orderPO.getId(), orderPO.getStatus());
         });
-
-
     }
 
     @Override
     public TaskOrdersVO acceptTaskOrder(Long taskOrderId) {
+        /**
+         * 这个不要了！！！！！！！！！！！
+         */
         /**
          * 雇主同意接单请求
          * 1、同意任务接收者是任务发布者
@@ -185,13 +196,18 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
         updateById(taskOrdersPO);
         taskPO.setStatus(TasksPO.Status.RUNNING);
         yujiTasksService.updateById(taskPO);
+        // 删除缓存
+        stringRedisTemplate.delete(TaskConstant.TASK_DETAIL_PREFIX + taskPO.getId());
         return new TaskOrdersVO(taskOrderId, taskOrdersPO.getStatus());
     }
 
     @Override
     public TaskOrdersVO refuseTaskOrder(Long taskOrderId) {
         /**
-         * 雇佣者拒绝接单请求
+         * 这个不要了！！！！！！！！！！！  如果要加这个，要修改状态
+         */
+        /**
+         * 雇主拒绝接单请求
          * 1、拒绝任务接收者是任务发布者
          * 2、任务存在且 处于WAIT_ACCEPT待接单状态
          *
@@ -219,6 +235,8 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
         // 修改任务表状态为 RECRUIT 招聘中
         taskPO.setStatus(TasksPO.Status.RECRUIT);
         yujiTasksService.updateById(taskPO);
+        // 删除缓存
+        stringRedisTemplate.delete(TaskConstant.TASK_DETAIL_PREFIX + taskPO.getId());
         return new TaskOrdersVO(taskOrderId, taskOrdersPO.getStatus());
     }
 
@@ -227,7 +245,7 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
         /**
          * 雇佣者取消订单
          * 1、订单取消者必须是任务接收者
-         * 2、任务订单存在 且只能是等待接收 或者 已接受这两种状态
+         * 2、任务订单存在 且只能是等待接收WAIT_ACCEPT 或者 已接受ACCEPTED这两种状态
          *
          * 1、修改任务表对应记录状态为 RECRUIT 招聘中
          * 2、删除任务订单表中对应的记录
@@ -248,10 +266,12 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
         }
         TasksPO taskPO = yujiTasksService.getOne(new LambdaQueryWrapper<TasksPO>().eq(TasksPO::getId, taskOrdersPO.getTaskId()));
 
-        // 修改任务订单表的状态，改为 取消
+        // 修改任务订单表的状态，改为 招募中
         taskPO.setStatus(TasksPO.Status.RECRUIT);
         // 修改任务表中任务的状态
         yujiTasksService.updateById(taskPO);
+        // 删除缓存
+        stringRedisTemplate.delete(TaskConstant.TASK_DETAIL_PREFIX + taskPO.getId());
         // 删除对应订单表记录
         removeById(taskOrderId);
         return new TaskOrdersVO(taskOrderId, taskOrdersPO.getStatus());
@@ -322,6 +342,8 @@ public class yujiTaskOrdersServiceImpl extends ServiceImpl<yujiTaskOrdersMapper,
         // 修改任务表中记录的状态
         taskPO.setStatus(TasksPO.Status.FINISH);
         yujiTasksService.updateById(taskPO);
+        // 删除缓存
+        stringRedisTemplate.delete(TaskConstant.TASK_DETAIL_PREFIX + taskPO.getId());
         return new TaskOrdersVO(taskOrderId, taskOrdersPO.getStatus());
     }
 

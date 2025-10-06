@@ -19,9 +19,9 @@ public class PostSearchVO {
     @Id
     private Long id;
     /* 完全匹配用 keyword，不需要分词 */
-    @Field(type = FieldType.Keyword)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word")
     private String title;
-    @Field(type = FieldType.Keyword)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word")
     private String content;
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

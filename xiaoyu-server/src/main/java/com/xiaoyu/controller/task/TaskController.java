@@ -48,10 +48,11 @@ public class TaskController {
     public Result<PageResult<GetTasksVO>> getTasks(
             @RequestParam(required=false,defaultValue="1") Integer page,
             @RequestParam(required=false,defaultValue="20") Integer size,
-            @RequestParam(required=false,defaultValue="RUNNING") TasksPO.Status status,    // 任务状态
+            @RequestParam(required=false,defaultValue="RECRUIT") TasksPO.Status status,    // 任务状态
             @RequestParam(required=false) String keyword,   // 关键字，关键字搜索，标题或内容
             @RequestParam(required=false) Integer tagId     // 标签ID
             ) throws InterruptedException {
+        /*
         log.info("获取任务列表");
         // 加入redis缓存
         List<PageResult<GetTasksVO>> result = redisUtil.<PageResult<GetTasksVO>, Integer>queryWithLogicExpire(
@@ -67,7 +68,10 @@ public class TaskController {
         );
 
         return Result.success(result!=null?result.getFirst():null);
-//        return Result.success(yujiTasksService.getTasks(page,size,status,keyword,tagId));
+
+        */
+        log.info("获取任务列表参数,status:{},keyword:{},tagId:{}",status,keyword,tagId);
+        return Result.success(yujiTasksService.getTasks(page,size,status,keyword,tagId));
     }
 
     @GetMapping("/my-published")

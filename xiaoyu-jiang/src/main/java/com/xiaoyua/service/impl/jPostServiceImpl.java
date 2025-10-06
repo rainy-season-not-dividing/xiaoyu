@@ -163,6 +163,7 @@ public class jPostServiceImpl implements jPostService {
         List<PostVO> vos = postVOPage.getRecords();
         batchFillPostRelatedData(vos);
 
+        // todo：数据加入es中
 //        List<PostSearchVO> searchVOs = vos.stream().map(
 //                postVO -> {
 //                    PostSearchVO searchVO = new PostSearchVO();
@@ -310,11 +311,11 @@ public class jPostServiceImpl implements jPostService {
             throw new RuntimeException("无权限查看该动态");
         }
 
-        // 增加浏览量
-        try {
-            postStatMapper.incView(postId);
-        } catch (Exception ignored) {
-        }
+//        // 增加浏览量，在controller里面已经加了
+//        try {
+//            postStatMapper.incView(postId);
+//        } catch (Exception ignored) {
+//        }
 
         // 使用联表查询获取完整数据（包含最新统计）
         List<PostVO> vos = postMapper.selectPostsWithDetailsByIds(Arrays.asList(postId), currentUserId);

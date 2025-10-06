@@ -27,4 +27,6 @@ public interface jAuthService {
      * @return 十位数字字符串账号，第一位不为零且保证唯一性
      */
     String generateUniqueAccount();
+
+    void logout(Long userId);
 }

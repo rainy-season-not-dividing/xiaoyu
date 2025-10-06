@@ -17,6 +17,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.Resource;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
@@ -186,28 +188,35 @@ public class RedisUtil {
         //1.2.1.2、逻辑过期--获取锁异步更新数据，并返回过期结果
         boolean getLock = tryLock(keyPrefix+"lock:id" ,5, 10, TimeUnit.SECONDS); // 锁超时5秒，持锁10秒
         if(getLock){
-            try{
-                // 异步更新redis,缓存重建
-                cacheRebuildExecutor.submit(()->{
-                    log.info("缓存重建开始：{}",id);
-                    List<R> dbData = dbFallBack.apply(id);
-                    if(dbData!=null){
-                        RedisDataDTO<R> cacheData = new RedisDataDTO<>();
-                        cacheData.setData(dbData);
-                        cacheData.setExpireTime(LocalDateTime.now().plusSeconds(time));
-                        redisTemplate.opsForValue().set(key, cacheData);
-                    }
-                    else{
-                        redisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL_BASE, TimeUnit.SECONDS);
+            // 过期后先抢“重建标记”，5 分钟内只允许 1 个线程重建
+            String rebuildFlag = key + ":rebuilding";
+            Boolean isFirst = redisTemplate.opsForValue().setIfAbsent(rebuildFlag, "1", Duration.ofMinutes(5));
+            if (Boolean.TRUE.equals(isFirst)) {
+                // *** 立即释放锁，让读线程不再阻塞 ***
+                unlock(keyPrefix + "lock:id");
+                cacheRebuildExecutor.submit(() -> {
+                    try {
+                        log.info("缓存重建开始：{}", id);
+                        List<R> dbData = dbFallBack.apply(id);
+                        if (dbData != null) {
+                            RedisDataDTO<R> cacheData = new RedisDataDTO<>();
+                            cacheData.setData(dbData);
+                            cacheData.setExpireTime(LocalDateTime.now().plusSeconds(time));
+                            redisTemplate.opsForValue().set(key, cacheData);
+                        } else {
+                            redisTemplate.opsForValue().set(key, "", CACHE_NULL_TTL_BASE, TimeUnit.SECONDS);
+                        }
+                    } catch (Exception e) {
+                        log.error("缓存重建失败，key: {}, id: {}", key, id, e);
+                    } finally {
+                        // *** 重建完成后再删标记 ***
+                        redisTemplate.delete(rebuildFlag);
                     }
                 });
             }
-            catch(Exception e){
-                log.error("缓存重建异步任务执行失败，key: {}, id: {}", key, id, e);
-                throw new RuntimeException(e);
-            }
-            finally{
-                unlock(keyPrefix+"lock:id");
+            else {
+                // 没抢到标记，直接解锁
+                unlock(keyPrefix + "lock:id");
             }
         }
         return data;

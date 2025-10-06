@@ -15,6 +15,7 @@ import com.xiaoyua.vo.user.UserSimpleVO;
 import com.xiaoyua.websocket.UserOnlineEventHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +33,13 @@ public class jAuthServiceImpl implements jAuthService {
     private final jUserMapper jUserMapper;
     private final jUserAuthMapper jUserAuthMapper;
     private final JwtUtil jwtUtil;
-
+    private final RedisTemplate<String, Object> redisTemplate;
     @Override
     public LoginVO passwordLogin(PasswordLoginDTO loginDTO) {
+
+
+
+
         // 1. 根据用户名查找用户认证信息
         LambdaQueryWrapper<UserAuthPO> authQuery = new LambdaQueryWrapper<>();
         authQuery.eq(UserAuthPO::getIdentityType, UserAuthPO.IdentityType.PASSWORD)
@@ -44,6 +49,14 @@ public class jAuthServiceImpl implements jAuthService {
         if (userAuth == null) {
             throw new RuntimeException("用户名或密码错误");
         }
+        if (!PasswordUtil.matches(loginDTO.getPassword(), userAuth.getCredential())) {
+            throw new RuntimeException("用户名或密码错误");
+        }
+        boolean hasRedisStatus = Boolean.TRUE.equals(redisTemplate.hasKey("xiaoyu:user:online:" + userAuth.getUserId()));
+        if(hasRedisStatus){
+            throw new RuntimeException("用户已登录");
+        }
+
         // 3. 查询用户信息
         UserPO user = jUserMapper.selectById(userAuth.getUserId());
         if (user == null) {
@@ -89,7 +102,7 @@ public class jAuthServiceImpl implements jAuthService {
         // 2. 创建用户
 
         UserPO user = new UserPO();
-        user.setNickname("匿名用户");
+        user.setNickname("用户"+account);
         user.setGender(0);
         user.setStatus(0);
         user.setIsRealName(0);
@@ -147,6 +160,13 @@ public class jAuthServiceImpl implements jAuthService {
 
         log.info("成功生成唯一账号: {}", account);
         return account;
+    }
+
+    @Override
+    public void logout(Long userId) {
+        // 删除Redis中的用户信息
+        redisTemplate.delete("xiaoyu:user:online:" + userId);
+        log.info("用户 {} 已登出", userId);
     }
 
     /**

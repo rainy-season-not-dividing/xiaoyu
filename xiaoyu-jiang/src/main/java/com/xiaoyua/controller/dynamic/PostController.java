@@ -190,9 +190,14 @@ public class PostController {
                               @RequestParam(value = "size", required = false) Integer size,
                               @RequestParam(value = "sort", required = false) String sort) throws InterruptedException {
         log.info("listAll page={}, size={}, sort={}", page, size, sort);
-//        var pageResult = jPostService.listAll(page, size, sort);
-        // 加入redis缓存
 
+        /*
+        var pageResult = jPostService.listAll(page, size, sort);
+        return Result.success("success", pageResult);
+        */
+
+
+        // 加入redis缓存
         List<PageResult<PostVO>> result = redisUtil.<PageResult<PostVO>, Integer>queryWithLogicExpire(
                 PostConstant.POST_LIST_KEY_PREFIX,
                 page,
@@ -205,6 +210,9 @@ public class PostController {
                 PostConstant.POST_LIST_TIMEOUT, TimeUnit.SECONDS
         );
         return Result.success("success", result!=null?result.getFirst():null);
+
+
+
     }
 
     @GetMapping("/user/{user_id}")
@@ -260,7 +268,7 @@ public class PostController {
 
     @PutMapping("/{post_id}")
     @Operation(summary = "更新动态")
-    public Result updatePost(@RequestBody @Valid PostUpdateDTO postUpdateDTO, @PathVariable("post_id") @Min(1) Long postId) {
+    public Result updatePost(@RequestBody PostUpdateDTO postUpdateDTO, @PathVariable("post_id") @Min(1) Long postId) {
         log.info("updatePost postUpdateDTO={}, postId={}", postUpdateDTO, postId);
         jPostService.updatePost(postUpdateDTO,postId);
         return Result.success("更新成功");

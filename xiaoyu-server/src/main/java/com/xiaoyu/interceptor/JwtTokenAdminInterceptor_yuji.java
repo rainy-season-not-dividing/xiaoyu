@@ -33,7 +33,6 @@ public class JwtTokenAdminInterceptor_yuji implements HandlerInterceptor {
 
         log.info("进行登录验证...");
         log.info("ServletPath: {}", request.getServletPath());
-
         //判断当前拦截到的是Controller的方法还是其他资源
         if (!(handler instanceof HandlerMethod)) {
             //当前拦截到的不是动态方法，直接放行

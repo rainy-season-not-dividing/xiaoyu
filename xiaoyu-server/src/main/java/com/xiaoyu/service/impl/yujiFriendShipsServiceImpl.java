@@ -49,11 +49,6 @@ public class yujiFriendShipsServiceImpl extends ServiceImpl<yujiFriendShipsMappe
         Long currentId = BaseContext.getId();
         // 获取目标用户id
         Long friendId =  sendFriendRequestDTO.getFriendId();
-        FriendMessagesPO friendMessagesPO = new FriendMessagesPO();
-        friendMessagesPO.setFromId(currentId);
-        friendMessagesPO.setToId(friendId);
-        friendMessagesPO.setContent(sendFriendRequestDTO.getMessage());
-        yujiFriendMessagesService.save(friendMessagesPO);
         // 创建好友关系
         // 判断是否已经是好友关系
         FriendshipsPO friendshipPO = getOne(new LambdaQueryWrapper<>(FriendshipsPO.class)
