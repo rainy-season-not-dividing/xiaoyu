@@ -188,7 +188,7 @@ public class RedisUtil {
         //1.2.1.2、逻辑过期--获取锁异步更新数据，并返回过期结果
         boolean getLock = tryLock(keyPrefix+"lock:id" ,5, 10, TimeUnit.SECONDS); // 锁超时5秒，持锁10秒
         if(getLock){
-            // 过期后先抢“重建标记”，5 分钟内只允许 1 个线程重建
+            // 过期后先抢“重建标记”，5 分钟内只允许 1 个线程重建 ； 这是因为后面直接unLock外面的锁了
             String rebuildFlag = key + ":rebuilding";
             Boolean isFirst = redisTemplate.opsForValue().setIfAbsent(rebuildFlag, "1", Duration.ofMinutes(5));
             if (Boolean.TRUE.equals(isFirst)) {

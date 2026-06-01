@@ -277,7 +277,11 @@
         <foreach collection="postIds" item="postId" open="(" separator="," close=")">
             #{postId}
         </foreach>
-        ORDER BY p.created_at DESC
+        ORDER BY FIELD(p.id,
+        <foreach collection="postIds" item="postId" separator=",">
+            #{postId}
+        </foreach>
+        )
     </select>
 
 </mapper>
