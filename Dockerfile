@@ -2,6 +2,8 @@ FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /workspace
 
+COPY .mvn/settings.xml /root/.m2/settings.xml
+
 COPY pom.xml .
 COPY xiaoyu-common/pom.xml xiaoyu-common/pom.xml
 COPY xiaoyu-jiang/pom.xml xiaoyu-jiang/pom.xml

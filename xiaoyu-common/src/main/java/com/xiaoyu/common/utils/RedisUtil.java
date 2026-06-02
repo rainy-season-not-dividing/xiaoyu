@@ -9,7 +9,8 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import com.github.xiaoymin.knife4j.core.util.StrUtil;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.xiaoyu.common.dto.RedisDataDTO;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,8 +27,9 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 
 @Component
-@Slf4j
 public class RedisUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(RedisUtil.class);
 
     // 线程池（企业中建议用ThreadPoolTaskExecutor，支持配置化）
     @Resource(name = "cacheRebuildExecutor")

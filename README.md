@@ -196,3 +196,37 @@ docker compose exec mysql mysql -uroot -p123456 xiaoyu
 - 不对公网暴露 `3306`、`6379`、`5672`、`9200`
 - 只开放应用端口 `8081`，按需开放 RabbitMQ 管理端口 `15672`
 - 将敏感配置迁移到 `.env` 或服务器环境变量
+
+## Cloud Server Files
+
+Some deployment files are ignored by Git because they may contain environment-specific values or sensitive data. If the cloud server is deployed with `git pull`, upload these files manually before running `docker compose up -d --build`.
+
+Required files:
+
+```text
+mydb_structure.sql
+xiaoyu-common/src/main/resources/application.yml
+xiaoyu-jiang/src/main/resources/application_j.yml
+xiaoyu-jiang/src/main/resources/application_j-dev.yml
+xiaoyu-server/src/main/resources/application.yml
+xiaoyu-server/src/main/resources/application-dev.yml
+```
+
+Optional but recommended when building the image on the server:
+
+```text
+.mvn/settings.xml
+```
+
+If `.mvn/settings.xml` is used for Maven mirrors during Docker build, add this line before the first `RUN mvn ...` command in `Dockerfile`:
+
+```dockerfile
+COPY .mvn/settings.xml /root/.m2/settings.xml
+```
+
+Notes:
+
+- `mydb_structure.sql` is mounted by `docker-compose.yml` into the MySQL init directory and only runs when the `mysql-data` volume is created for the first time.
+- The SQL file may contain both table structure and seed/test data. It is OK to delete business/test `INSERT INTO` rows before deployment, but keep `CREATE TABLE`, indexes, constraints, and any required dictionary/admin/bootstrap data.
+- `xiaoyu-server` depends on `xiaoyu-jiang` and `xiaoyu-common`, so resources from dependency modules may also be packaged into the final application. Do not assume only one YAML file matters unless the Spring config import/profile relationship has been simplified.
+- Current Docker Compose starts the application with `SPRING_PROFILES_ACTIVE=dev`, so `application-dev.yml` and imported YAML files must exist during build/runtime unless configuration is moved to environment variables or a production profile.
