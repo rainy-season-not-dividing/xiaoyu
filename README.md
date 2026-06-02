@@ -230,3 +230,39 @@ Notes:
 - The SQL file may contain both table structure and seed/test data. It is OK to delete business/test `INSERT INTO` rows before deployment, but keep `CREATE TABLE`, indexes, constraints, and any required dictionary/admin/bootstrap data.
 - `xiaoyu-server` depends on `xiaoyu-jiang` and `xiaoyu-common`, so resources from dependency modules may also be packaged into the final application. Do not assume only one YAML file matters unless the Spring config import/profile relationship has been simplified.
 - Current Docker Compose starts the application with `SPRING_PROFILES_ACTIVE=dev`, so `application-dev.yml` and imported YAML files must exist during build/runtime unless configuration is moved to environment variables or a production profile.
+
+## Docker Compose 与 yml 配置关系
+
+本项目使用 Docker Compose 启动时，`docker-compose.yml` 中的 `SPRING_APPLICATION_JSON` 会覆盖 jar 包内 `application.yml`、`application-dev.yml`、`application_j.yml`、`application_j-dev.yml` 中的部分连接配置。
+
+当前 Docker 环境下实际使用的服务地址主要来自 `docker-compose.yml`：
+
+```text
+MySQL: mysql:3306
+Redis: redis:6379
+RabbitMQ: rabbitmq:5672
+Elasticsearch: http://elasticsearch:9200
+```
+
+因此，yml 文件里原本写的 `localhost`、`192.168.*.*` 这类地址，在 Compose 启动应用容器时通常会被 `SPRING_APPLICATION_JSON` 覆盖，不会和容器内服务名冲突。
+
+端口关系：
+
+- Spring Boot 应用内部端口是 `server.port=8081`。
+- Compose 中 `ports: "8081:8081"` 的左边是宿主机端口，右边是容器端口。
+- 这两个配置目前是匹配的，不冲突。
+
+需要特别注意的是 `server.address`：
+
+```yaml
+server:
+  address: localhost
+```
+
+如果容器内只监听 `localhost`，宿主机可能访问不到应用。当前 `Dockerfile` 启动命令里已经通过下面参数覆盖为 `0.0.0.0`：
+
+```bash
+-Dserver.address=0.0.0.0
+```
+
+所以现在可以正常对外暴露应用端口。后续如果整理配置，建议把 yml 中的 `server.address: localhost` 删除，或改成 `0.0.0.0`，减少部署时的隐藏风险。
